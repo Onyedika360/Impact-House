@@ -1,874 +1,393 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>
-  window.ENV_API_URL = 'https://impact-house.onrender.com/api';
-</script>
+<script>window.ENV_API_URL = 'https://impact-house.onrender.com/api';</script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Impact House Church — Communications</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --black: #131210;
-    --charcoal: #1e1d1b;
-    --dark: #2b2a27;
-    --mid: #4a4844;
-    --muted: #7a7874;
-    --border: #e2ddd6;
-    --border-light: #ede9e3;
-    --surface: #f9f7f4;
-    --white: #ffffff;
-    --gold: #c9a96e;
-    --gold-light: #f0e6d0;
-    --gold-dark: #9e7c46;
-    --warm-gray: #f4f1ec;
-    --font-display: 'Cormorant Garamond', Georgia, serif;
-    --font-body: 'DM Sans', sans-serif;
-    --radius: 10px;
-    --radius-lg: 14px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --black: #131210; --charcoal: #1e1d1b; --mid: #4a4844; --muted: #7a7874;
+    --border: #e2ddd6; --border-light: #ede9e3; --surface: #f9f7f4; --white: #ffffff;
+    --gold: #c9a96e; --gold-light: #f0e6d0; --gold-dark: #9e7c46; --warm-gray: #f4f1ec;
+    --font-display: 'Cormorant Garamond', Georgia, serif; --font-body: 'DM Sans', sans-serif;
+    --radius: 10px; --radius-lg: 14px;
+    --success: #3a5e3a; --danger: #8b2222;
   }
+  html, body { height: 100%; font-family: var(--font-body); font-size: 14px; line-height: 1.6; color: var(--black); }
 
-  html, body { height: 100%; }
-
-  body {
-    font-family: var(--font-body);
-    background: var(--surface);
-    color: var(--black);
-    font-size: 14px;
-    line-height: 1.6;
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
+  /* ── LOGIN ── */
+  #login-screen {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; background: var(--black);
   }
+  .login-box {
+    background: var(--white); border-radius: 18px; padding: 44px 40px;
+    width: 420px; max-width: 95vw;
+  }
+  .login-brand { text-align: center; margin-bottom: 32px; }
+  .login-icon {
+    width: 52px; height: 52px; background: var(--gold); border-radius: 13px;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+  }
+  .login-icon svg { width: 26px; height: 26px; fill: var(--black); }
+  .login-title { font-family: var(--font-display); font-size: 26px; font-weight: 600; color: var(--black); }
+  .login-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .login-form { display: flex; flex-direction: column; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--mid); }
+  .form-field {
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 13px;
+    font-family: var(--font-body); font-size: 14px; color: var(--black);
+    background: var(--surface); outline: none; width: 100%; transition: border-color 0.15s;
+  }
+  .form-field:focus { border-color: var(--gold); background: var(--white); }
+  .login-error {
+    background: #fdf0f0; border: 1px solid #f5c6c6; border-radius: 8px;
+    padding: 10px 13px; font-size: 13px; color: var(--danger); display: none;
+  }
+  .login-error.show { display: block; }
 
-  /* ── SIDEBAR ── */
+  /* ── APP SHELL ── */
+  #app { display: none; height: 100vh; overflow: hidden; }
+  #app.visible { display: flex; }
   .sidebar {
-    width: 240px;
-    flex-shrink: 0;
-    background: var(--black);
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    position: relative;
-    z-index: 10;
+    width: 240px; flex-shrink: 0; background: var(--black);
+    display: flex; flex-direction: column; height: 100vh; z-index: 10;
   }
-
-  .sidebar-brand {
-    padding: 28px 22px 24px;
-    border-bottom: 1px solid #2a2927;
-  }
-
-  .brand-mark {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
+  .sidebar-brand { padding: 28px 22px 24px; border-bottom: 1px solid #2a2927; }
+  .brand-mark { display: flex; align-items: center; gap: 12px; }
   .brand-icon {
-    width: 38px;
-    height: 38px;
-    background: var(--gold);
-    border-radius: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    width: 38px; height: 38px; background: var(--gold); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-
-  .brand-icon svg {
-    width: 20px;
-    height: 20px;
-    fill: var(--black);
-  }
-
-  .brand-text {
-    line-height: 1.2;
-  }
-
-  .brand-name {
-    font-family: var(--font-display);
-    font-size: 15px;
-    font-weight: 600;
-    color: #f5f2ed;
-    display: block;
-  }
-
-  .brand-sub {
-    font-size: 10.5px;
-    color: #666;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .sidebar-nav {
-    flex: 1;
-    padding: 18px 0;
-    overflow-y: auto;
-  }
-
-  .nav-group {
-    margin-bottom: 4px;
-  }
-
-  .nav-section-label {
-    font-size: 9.5px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #444;
-    padding: 10px 22px 6px;
-    display: block;
-  }
-
+  .brand-icon svg { width: 20px; height: 20px; fill: var(--black); }
+  .brand-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: #f5f2ed; display: block; line-height: 1.2; }
+  .brand-sub { font-size: 10.5px; color: #666; letter-spacing: 0.06em; text-transform: uppercase; }
+  .sidebar-nav { flex: 1; padding: 18px 0; overflow-y: auto; }
+  .nav-section-label { font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #444; padding: 10px 22px 6px; display: block; }
   .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    padding: 9px 22px;
-    color: #777;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    border-left: 2px solid transparent;
-    font-size: 13.5px;
-    font-weight: 400;
-    user-select: none;
+    display: flex; align-items: center; gap: 11px; padding: 9px 22px;
+    color: #777; cursor: pointer; transition: all 0.15s ease;
+    border-left: 2px solid transparent; font-size: 13.5px; user-select: none;
   }
-
   .nav-item:hover { color: #ccc; background: rgba(255,255,255,0.03); }
-
-  .nav-item.active {
-    color: #f5f2ed;
-    background: rgba(255,255,255,0.05);
-    border-left-color: var(--gold);
-  }
-
-  .nav-item svg {
-    width: 15px;
-    height: 15px;
-    flex-shrink: 0;
-    opacity: 0.75;
-  }
-
+  .nav-item.active { color: #f5f2ed; background: rgba(255,255,255,0.05); border-left-color: var(--gold); }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.75; }
   .nav-item.active svg { opacity: 1; }
-
-  .sidebar-footer {
-    padding: 16px 22px;
-    border-top: 1px solid #222;
-  }
-
-  .admin-pill {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
+  .sidebar-footer { padding: 16px 22px; border-top: 1px solid #222; }
+  .admin-pill { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+  .admin-info { display: flex; align-items: center; gap: 10px; }
   .admin-avatar {
-    width: 30px;
-    height: 30px;
-    background: #2e2c28;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--gold);
-    flex-shrink: 0;
+    width: 30px; height: 30px; background: #2e2c28; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500; color: var(--gold); flex-shrink: 0;
   }
-
   .admin-name { font-size: 12.5px; color: #888; }
   .admin-role { font-size: 10.5px; color: #444; }
+  .logout-btn {
+    background: none; border: none; color: #444; cursor: pointer; padding: 4px;
+    border-radius: 5px; transition: color 0.15s;
+  }
+  .logout-btn:hover { color: #999; }
+  .logout-btn svg { width: 14px; height: 14px; display: block; }
 
   /* ── MAIN ── */
-  .main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 0;
-  }
-
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; background: var(--surface); }
   .topbar {
-    background: var(--white);
-    border-bottom: 1px solid var(--border-light);
-    padding: 0 32px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
+    background: var(--white); border-bottom: 1px solid var(--border-light);
+    padding: 0 32px; height: 60px; display: flex; align-items: center;
+    justify-content: space-between; flex-shrink: 0;
   }
-
   .topbar-left { display: flex; align-items: baseline; gap: 10px; }
-
-  .page-title {
-    font-family: var(--font-display);
-    font-size: 21px;
-    font-weight: 500;
-    color: var(--black);
-  }
-
-  .page-subtitle {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
+  .page-title { font-family: var(--font-display); font-size: 21px; font-weight: 500; }
+  .page-subtitle { font-size: 12px; color: var(--muted); }
   .topbar-right { display: flex; gap: 10px; align-items: center; }
-
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 18px;
-    border-radius: 8px;
-    font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px;
+    border-radius: 8px; font-family: var(--font-body); font-size: 13px;
+    font-weight: 500; cursor: pointer; border: none; transition: all 0.15s;
   }
-
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
   .btn svg { width: 14px; height: 14px; }
   .btn-dark { background: var(--black); color: #f5f2ed; }
-  .btn-dark:hover { background: var(--charcoal); }
+  .btn-dark:hover:not(:disabled) { background: var(--charcoal); }
   .btn-ghost { background: transparent; color: var(--mid); border: 1px solid var(--border); }
-  .btn-ghost:hover { background: var(--warm-gray); }
-  .btn-gold { background: var(--gold); color: var(--black); font-weight: 500; }
-  .btn-gold:hover { background: var(--gold-dark); color: #fff; }
+  .btn-ghost:hover:not(:disabled) { background: var(--warm-gray); }
+  .btn-gold { background: var(--gold); color: var(--black); }
+  .btn-gold:hover:not(:disabled) { background: var(--gold-dark); color: #fff; }
+  .btn-danger { background: #fdf0f0; color: var(--danger); border: 1px solid #f5c6c6; }
+  .btn-danger:hover:not(:disabled) { background: #f9dede; }
 
-  /* ── CONTENT ── */
-  .page-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 28px 32px;
-  }
-
+  .page-content { flex: 1; overflow-y: auto; padding: 28px 32px; }
   .screen { display: none; }
-  .screen.active { display: block; }
+  .screen.active { display: block; animation: fadeUp 0.2s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* ── DASHBOARD ── */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+    background: var(--black); color: #f5f2ed; padding: 12px 20px;
+    border-radius: 10px; font-size: 13px; font-weight: 500;
+    transform: translateY(80px); opacity: 0; transition: all 0.3s ease;
+    max-width: 320px;
   }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-left: 3px solid var(--gold); }
+  #toast.error { border-left: 3px solid #e05c5c; }
 
+  /* ── LOADING SPINNER ── */
+  .spinner {
+    display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-state {
+    display: flex; align-items: center; justify-content: center;
+    padding: 48px; color: var(--muted); gap: 12px; font-size: 13px;
+  }
+  .loading-state .spinner { border-color: var(--border); border-top-color: var(--gold); }
+
+  /* ── STATS ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
   .stat-card {
-    background: var(--white);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius);
-    padding: 20px 22px;
-    position: relative;
-    overflow: hidden;
+    background: var(--white); border: 1px solid var(--border-light);
+    border-radius: var(--radius); padding: 20px 22px; position: relative; overflow: hidden;
   }
-
   .stat-card::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--gold);
-    opacity: 0;
-    transition: opacity 0.2s;
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; background: var(--gold); opacity: 0; transition: opacity 0.2s;
   }
-
   .stat-card:hover::after { opacity: 1; }
-
   .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 8px; }
-  .stat-value { font-family: var(--font-display); font-size: 32px; font-weight: 500; color: var(--black); line-height: 1; }
+  .stat-value { font-family: var(--font-display); font-size: 32px; font-weight: 500; line-height: 1; }
   .stat-delta { font-size: 11.5px; color: var(--gold-dark); margin-top: 5px; }
 
-  .dash-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 20px;
-  }
-
-  .card {
-    background: var(--white);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-  }
-
+  /* ── CARDS ── */
+  .dash-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; }
+  .card { background: var(--white); border: 1px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; }
   .card-header {
-    padding: 16px 22px;
-    border-bottom: 1px solid var(--border-light);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    padding: 16px 22px; border-bottom: 1px solid var(--border-light);
+    display: flex; align-items: center; justify-content: space-between;
   }
-
-  .card-title { font-size: 13.5px; font-weight: 500; color: var(--black); }
-  .card-action { font-size: 12px; color: var(--gold-dark); cursor: pointer; font-weight: 500; }
+  .card-title { font-size: 13.5px; font-weight: 500; }
+  .card-action { font-size: 12px; color: var(--gold-dark); cursor: pointer; font-weight: 500; background: none; border: none; font-family: var(--font-body); }
   .card-action:hover { color: var(--gold); }
 
-  /* Activity */
-  .activity-feed { padding: 6px 0; }
-
+  /* ── ACTIVITY ── */
   .activity-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 12px 22px;
-    border-bottom: 1px solid var(--border-light);
-    transition: background 0.1s;
+    display: flex; align-items: flex-start; gap: 14px; padding: 12px 22px;
+    border-bottom: 1px solid var(--border-light); transition: background 0.1s;
   }
-
   .activity-item:last-child { border-bottom: none; }
   .activity-item:hover { background: var(--warm-gray); }
-
-  .activity-dot-wrap { padding-top: 6px; }
-
-  .activity-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
+  .activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
   .dot-gold { background: var(--gold); }
   .dot-dark { background: var(--mid); }
   .dot-light { background: var(--border); }
-
-  .activity-body { flex: 1; }
   .activity-text { font-size: 13px; color: var(--charcoal); line-height: 1.45; }
   .activity-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-  /* Quick compose */
-  .compose-card { padding: 20px 22px; }
-  .compose-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  /* ── COMPOSE ── */
   .compose-tab {
-    padding: 5px 14px;
-    border-radius: 20px;
-    font-size: 12.5px;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    background: transparent;
-    font-family: var(--font-body);
-    transition: all 0.15s;
+    padding: 5px 14px; border-radius: 20px; font-size: 12.5px; cursor: pointer;
+    border: 1px solid var(--border); color: var(--muted); background: transparent;
+    font-family: var(--font-body); transition: all 0.15s;
   }
   .compose-tab.active { background: var(--black); color: #f5f2ed; border-color: var(--black); }
-  .compose-tab:hover:not(.active) { border-color: var(--mid); color: var(--mid); }
-
   .field {
-    width: 100%;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 9px 13px;
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--black);
-    background: var(--surface);
-    outline: none;
-    margin-bottom: 10px;
-    transition: border-color 0.15s;
+    width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px;
+    font-family: var(--font-body); font-size: 13px; color: var(--black);
+    background: var(--surface); outline: none; transition: border-color 0.15s;
   }
-
   .field:focus { border-color: var(--gold); background: var(--white); }
   .field::placeholder { color: #bbb; }
-
-  textarea.field { resize: none; height: 90px; }
-
-  .compose-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 12px;
+  textarea.field { resize: none; }
+  select.field { appearance: none; cursor: pointer; }
+  .char-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin: 4px 0; }
+  .char-fill { height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.2s; width: 0%; }
+  .compose-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
+  .compose-main { display: flex; flex-direction: column; gap: 16px; }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 12px; font-weight: 500; color: var(--mid); }
+  .tag-pill {
+    padding: 4px 12px; border-radius: 20px; background: var(--warm-gray);
+    border: 1px solid var(--border); font-size: 12px; color: var(--mid);
+    cursor: pointer; transition: all 0.15s; font-family: var(--font-body);
   }
-
-  .char-count { font-size: 11.5px; color: var(--muted); }
-
-  /* ── MEMBERS ── */
-  .members-toolbar {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-    align-items: center;
+  .tag-pill:hover { border-color: var(--gold); color: var(--gold-dark); }
+  .tag-pill.selected { background: var(--black); color: #f5f2ed; border-color: var(--black); }
+  .compose-sidebar-panel {
+    background: var(--white); border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg); overflow: hidden; position: sticky; top: 0;
   }
-
-  .search-wrap {
-    flex: 1;
-    position: relative;
+  .panel-section { padding: 18px 20px; border-bottom: 1px solid var(--border-light); }
+  .panel-section:last-child { border-bottom: none; }
+  .panel-section-title { font-size: 11px; font-weight: 500; color: var(--mid); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .send-summary { background: var(--warm-gray); border-radius: 8px; padding: 12px 14px; font-size: 12.5px; color: var(--mid); line-height: 1.8; }
+  .send-summary strong { color: var(--black); }
+  .schedule-opt {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+    font-size: 13px; color: var(--mid); background: var(--white);
+    font-family: var(--font-body); transition: all 0.15s; margin-bottom: 8px; width: 100%;
   }
+  .schedule-opt:last-child { margin-bottom: 0; }
+  .schedule-opt.selected { border-color: var(--gold); background: var(--gold-light); color: var(--gold-dark); }
+  .schedule-opt-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid currentColor; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .schedule-opt.selected .schedule-opt-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold-dark); }
 
-  .search-wrap svg {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 14px; height: 14px;
-    color: var(--muted);
-  }
-
+  /* ── MEMBERS TABLE ── */
+  .members-toolbar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; }
+  .search-wrap { flex: 1; position: relative; }
+  .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--muted); }
   .search-input {
-    width: 100%;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 9px 13px 9px 36px;
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--black);
-    background: var(--white);
-    outline: none;
+    width: 100%; border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 13px 9px 36px; font-family: var(--font-body); font-size: 13px;
+    color: var(--black); background: var(--white); outline: none;
   }
-
   .search-input:focus { border-color: var(--gold); }
-
-  .filter-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--white);
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--mid);
-    cursor: pointer;
-  }
-
-  .members-table {
-    background: var(--white);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-  }
-
+  .members-table { background: var(--white); border: 1px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; }
   .table-head {
-    display: grid;
-    grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 80px;
-    padding: 11px 22px;
-    background: var(--warm-gray);
+    display: grid; grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 80px;
+    padding: 11px 22px; background: var(--warm-gray);
     border-bottom: 1px solid var(--border-light);
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--muted);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    font-size: 11px; font-weight: 500; color: var(--muted);
+    letter-spacing: 0.04em; text-transform: uppercase;
   }
-
   .table-row {
-    display: grid;
-    grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 80px;
-    padding: 14px 22px;
-    border-bottom: 1px solid var(--border-light);
-    align-items: center;
-    transition: background 0.1s;
+    display: grid; grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 80px;
+    padding: 13px 22px; border-bottom: 1px solid var(--border-light);
+    align-items: center; transition: background 0.1s;
   }
-
   .table-row:last-child { border-bottom: none; }
   .table-row:hover { background: var(--warm-gray); }
-
   .member-cell { display: flex; align-items: center; gap: 11px; }
-
   .member-avatar {
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 500;
-    flex-shrink: 0;
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; flex-shrink: 0; background: #ede9e3; color: #5a5450;
   }
-
-  .av-a { background: #ede9e3; color: #5a5450; }
-  .av-b { background: #e6ede8; color: #3d5c44; }
-  .av-c { background: #e8e4f0; color: #4a3f6e; }
-  .av-d { background: #f0e8e4; color: #6e4a3f; }
-  .av-e { background: #e4ecf0; color: #3f5e6e; }
-
-  .member-name-cell { font-size: 13.5px; font-weight: 500; color: var(--black); }
+  .member-name-cell { font-size: 13.5px; font-weight: 500; }
   .member-id { font-size: 11px; color: var(--muted); }
-  .table-cell { font-size: 13px; color: var(--mid); }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 500;
-  }
-
+  .table-cell { font-size: 13px; color: var(--mid); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
   .badge-both { background: var(--gold-light); color: var(--gold-dark); }
   .badge-sms { background: #e8f0e8; color: #3a5e3a; }
   .badge-email { background: #e4ecf4; color: #2a4a6e; }
   .badge-inactive { background: #f0eeeb; color: #888; }
-
   .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
-
   .icon-btn {
-    width: 28px; height: 28px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border);
-    background: transparent;
-    cursor: pointer;
-    color: var(--muted);
-    transition: all 0.15s;
+    width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; border: 1px solid var(--border); background: transparent;
+    cursor: pointer; color: var(--muted); transition: all 0.15s;
   }
-
   .icon-btn:hover { background: var(--warm-gray); color: var(--mid); }
+  .icon-btn.danger:hover { background: #fdf0f0; color: var(--danger); border-color: #f5c6c6; }
   .icon-btn svg { width: 13px; height: 13px; }
 
-  /* ── COMPOSE SCREENS ── */
-  .compose-layout {
-    display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 24px;
-    align-items: start;
-  }
-
-  .compose-main { display: flex; flex-direction: column; gap: 16px; }
-
-  .field-group { display: flex; flex-direction: column; gap: 6px; }
-  .field-label { font-size: 12px; font-weight: 500; color: var(--mid); }
-
-  .recipients-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--surface);
-    min-height: 42px;
-    cursor: text;
-  }
-
-  .recipient-tag {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background: var(--black);
-    color: #f5f2ed;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-  }
-
-  .recipient-tag button {
-    background: none;
-    border: none;
-    color: #999;
-    cursor: pointer;
-    padding: 0;
-    font-size: 14px;
-    line-height: 1;
-  }
-
-  .tag-pill {
-    padding: 4px 12px;
-    border-radius: 20px;
-    background: var(--warm-gray);
-    border: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--mid);
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: var(--font-body);
-  }
-
-  .tag-pill:hover { background: var(--gold-light); border-color: var(--gold); color: var(--gold-dark); }
-  .tag-pill.selected { background: var(--black); color: #f5f2ed; border-color: var(--black); }
-
-  .sms-textarea { height: 160px; }
-  .email-textarea { height: 220px; }
-
-  .char-bar {
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: -8px;
-    margin-bottom: 4px;
-  }
-
-  .char-fill {
-    height: 100%;
-    background: var(--gold);
-    border-radius: 2px;
-    transition: width 0.2s;
-  }
-
-  .compose-sidebar-panel {
-    background: var(--white);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    position: sticky;
-    top: 0;
-  }
-
-  .panel-section { padding: 18px 20px; border-bottom: 1px solid var(--border-light); }
-  .panel-section:last-child { border-bottom: none; }
-  .panel-section-title { font-size: 12px; font-weight: 500; color: var(--mid); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-
-  .recipient-group-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-  .preview-box {
-    background: var(--surface);
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    padding: 14px;
-    font-size: 13px;
-    color: var(--mid);
-    line-height: 1.6;
-    min-height: 80px;
-  }
-
-  .schedule-options { display: flex; flex-direction: column; gap: 8px; }
-
-  .schedule-opt {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-size: 13px;
-    color: var(--mid);
-    background: var(--white);
-  }
-
-  .schedule-opt:hover { border-color: var(--gold); color: var(--black); }
-  .schedule-opt.selected { border-color: var(--gold); background: var(--gold-light); color: var(--gold-dark); }
-
-  .schedule-opt-dot {
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    border: 1.5px solid currentColor;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .schedule-opt.selected .schedule-opt-dot::after {
-    content: '';
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--gold-dark);
-  }
-
-  .send-summary {
-    background: var(--warm-gray);
-    border-radius: 8px;
-    padding: 12px 14px;
-    font-size: 12.5px;
-    color: var(--mid);
-    line-height: 1.7;
-  }
-
-  .send-summary strong { color: var(--black); }
-
   /* ── LOG ── */
-  .log-filters {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-
+  .log-filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
   .log-filter-tab {
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 12.5px;
-    border: 1px solid var(--border);
-    background: var(--white);
-    cursor: pointer;
-    font-family: var(--font-body);
-    color: var(--mid);
-    transition: all 0.15s;
+    padding: 6px 16px; border-radius: 20px; font-size: 12.5px;
+    border: 1px solid var(--border); background: var(--white);
+    cursor: pointer; font-family: var(--font-body); color: var(--mid); transition: all 0.15s;
   }
-
   .log-filter-tab.active { background: var(--black); color: #f5f2ed; border-color: var(--black); }
-
   .log-list { display: flex; flex-direction: column; gap: 12px; }
-
   .log-card {
-    background: var(--white);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius);
-    padding: 18px 22px;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 16px;
-    align-items: center;
-    transition: box-shadow 0.15s;
+    background: var(--white); border: 1px solid var(--border-light); border-radius: var(--radius);
+    padding: 18px 22px; display: grid; grid-template-columns: auto 1fr auto; gap: 16px;
+    align-items: center; transition: box-shadow 0.15s;
   }
-
-  .log-card:hover { box-shadow: var(--shadow); }
-
-  .log-type-icon {
-    width: 40px; height: 40px;
-    border-radius: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
+  .log-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .log-type-icon { width: 40px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .log-sms { background: #e8f0e8; }
   .log-email { background: #e4ecf4; }
-  .log-sms svg { color: #3a5e3a; }
-  .log-email svg { color: #2a4a6e; }
   .log-type-icon svg { width: 18px; height: 18px; }
-
-  .log-title { font-size: 14px; font-weight: 500; color: var(--black); margin-bottom: 3px; }
+  .log-title { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
   .log-meta { font-size: 12px; color: var(--muted); }
-
   .log-stats { text-align: right; }
-  .log-stat-big { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--black); }
+  .log-stat-big { font-family: var(--font-display); font-size: 22px; font-weight: 500; }
   .log-stat-label { font-size: 11px; color: var(--muted); }
 
-  /* ── ADD MEMBER MODAL ── */
+  /* ── MODAL ── */
   .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center; z-index: 1000;
   }
-
   .modal-overlay.open { display: flex; }
-
-  .modal {
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    width: 480px;
-    max-width: 95vw;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-  }
-
-  .modal-header {
-    padding: 22px 28px 18px;
-    border-bottom: 1px solid var(--border-light);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
+  .modal { background: var(--white); border-radius: var(--radius-lg); width: 480px; max-width: 95vw; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal-header { padding: 22px 28px 18px; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; }
   .modal-title { font-family: var(--font-display); font-size: 20px; font-weight: 500; }
-
-  .modal-close {
-    width: 30px; height: 30px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--muted);
-    font-size: 18px;
-    line-height: 1;
-  }
-
+  .modal-close { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 18px; line-height: 1; }
   .modal-close:hover { background: var(--warm-gray); }
-
   .modal-body { padding: 22px 28px; display: flex; flex-direction: column; gap: 14px; }
-
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  .form-group { display: flex; flex-direction: column; gap: 5px; }
-  .form-label { font-size: 12px; font-weight: 500; color: var(--mid); }
-
-  .form-field {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 9px 12px;
-    font-family: var(--font-body);
-    font-size: 13px;
-    color: var(--black);
-    outline: none;
-    background: var(--surface);
-  }
-
-  .form-field:focus { border-color: var(--gold); background: var(--white); }
-
   .notify-options { display: flex; gap: 8px; }
-
   .notify-opt {
-    flex: 1;
-    padding: 9px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    text-align: center;
-    cursor: pointer;
-    font-size: 12.5px;
-    color: var(--mid);
-    transition: all 0.15s;
-    font-family: var(--font-body);
-    background: var(--white);
+    flex: 1; padding: 9px; border-radius: 8px; border: 1px solid var(--border);
+    text-align: center; cursor: pointer; font-size: 12.5px; color: var(--mid);
+    transition: all 0.15s; font-family: var(--font-body); background: var(--white);
   }
-
   .notify-opt:hover { border-color: var(--gold); }
   .notify-opt.selected { background: var(--black); color: #f5f2ed; border-color: var(--black); }
+  .modal-footer { padding: 16px 28px 22px; display: flex; gap: 10px; justify-content: flex-end; }
 
-  .modal-footer {
-    padding: 16px 28px 22px;
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-  }
-
-  /* ── ANIMATIONS ── */
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .screen.active { animation: fadeInUp 0.25s ease; }
-
-  /* ── SCROLLBAR ── */
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
+  /* ── MISC ── */
+  .empty-state { text-align: center; padding: 48px 32px; color: var(--muted); }
+  .empty-state svg { width: 40px; height: 40px; opacity: 0.3; margin-bottom: 12px; }
+  .empty-state p { font-size: 13px; }
+  ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-
-  /* ── DIVIDER ── */
-  .divider { height: 1px; background: var(--border-light); margin: 8px 0; }
-
-  .empty-row { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
-
-  select.form-field { appearance: none; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sidebar-brand">
-    <div class="brand-mark">
-      <div class="brand-icon">
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-icon">
         <svg viewBox="0 0 20 20"><path d="M10 2L9 6H4.5l3.7 2.7-1.4 4.3L10 10.6l3.2 2.4-1.4-4.3L15.5 6H11L10 2z"/></svg>
       </div>
-      <div class="brand-text">
-        <span class="brand-name">Impact House Church</span>
-        <span class="brand-sub">Communications</span>
+      <div class="login-title">Impact House Church</div>
+      <div class="login-sub">Communications Portal</div>
+    </div>
+    <div class="login-form">
+      <div id="login-error" class="login-error"></div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-field" type="email" id="login-email" placeholder="admin@impacthouse.org"/>
       </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-field" type="password" id="login-password" placeholder="••••••••"/>
+      </div>
+      <button class="btn btn-dark" id="login-btn" onclick="doLogin()" style="width:100%;justify-content:center;padding:11px;margin-top:4px;">
+        Sign In
+      </button>
     </div>
   </div>
+</div>
 
-  <nav class="sidebar-nav">
-    <div class="nav-group">
+<!-- ── APP ── -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <div class="brand-icon">
+          <svg viewBox="0 0 20 20"><path d="M10 2L9 6H4.5l3.7 2.7-1.4 4.3L10 10.6l3.2 2.4-1.4-4.3L15.5 6H11L10 2z"/></svg>
+        </div>
+        <div>
+          <span class="brand-name">Impact House Church</span>
+          <span class="brand-sub">Communications</span>
+        </div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
       <span class="nav-section-label">Overview</span>
       <div class="nav-item active" data-screen="dashboard">
         <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
@@ -878,628 +397,774 @@
         <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="6" cy="5" r="2.5"/><path d="M1 14c0-2.8 2.2-5 5-5s5 2.2 5 5H1z"/><circle cx="12" cy="5" r="2" opacity=".5"/><path d="M12 10c1.5.3 3 1.5 3 4h-3" opacity=".5"/></svg>
         Members
       </div>
-    </div>
-
-    <div class="nav-group">
-      <span class="nav-section-label">Messaging</span>
+      <span class="nav-section-label" style="margin-top:8px;">Messaging</span>
       <div class="nav-item" data-screen="sms">
         <svg viewBox="0 0 16 16" fill="currentColor"><path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1zM5 8a1 1 0 110-2 1 1 0 010 2zm3 0a1 1 0 110-2 1 1 0 010 2zm3 0a1 1 0 110-2 1 1 0 010 2z"/></svg>
         Send SMS
       </div>
       <div class="nav-item" data-screen="email">
-        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 5l7 5 7-5" stroke="var(--black)" stroke-width="1" fill="none"/></svg>
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 5l7 5 7-5" stroke="#131210" stroke-width="1" fill="none"/></svg>
         Email Newsletter
       </div>
-    </div>
-
-    <div class="nav-group">
-      <span class="nav-section-label">Records</span>
+      <span class="nav-section-label" style="margin-top:8px;">Records</span>
       <div class="nav-item" data-screen="log">
         <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
         Message Log
       </div>
-    </div>
-  </nav>
-
-  <div class="sidebar-footer">
-    <div class="admin-pill">
-      <div class="admin-avatar">PA</div>
-      <div>
-        <div class="admin-name">Pastor Admin</div>
-        <div class="admin-role">Administrator</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-pill">
+        <div class="admin-info">
+          <div class="admin-avatar" id="admin-avatar">PA</div>
+          <div>
+            <div class="admin-name" id="admin-name">Loading...</div>
+            <div class="admin-role">Administrator</div>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Sign out">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 8H2M6 4l-4 4 4 4"/><path d="M6 2h7a1 1 0 011 1v10a1 1 0 01-1 1H6"/></svg>
+        </button>
       </div>
     </div>
-  </div>
-</aside>
+  </aside>
 
-<!-- MAIN -->
-<div class="main">
-
-  <!-- TOP BAR -->
-  <header class="topbar" id="topbar">
-    <div class="topbar-left">
-      <span class="page-title" id="topbar-title">Dashboard</span>
-      <span class="page-subtitle" id="topbar-sub">Good morning, Pastor</span>
-    </div>
-    <div class="topbar-right" id="topbar-actions">
-      <button class="btn btn-ghost" onclick="openModal()">
-        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1v12M1 7h12"/></svg>
-        Add Member
-      </button>
-      <button class="btn btn-gold" onclick="navigate('sms')">New Broadcast</button>
-    </div>
-  </header>
-
-  <!-- CONTENT -->
-  <div class="page-content">
-
-    <!-- DASHBOARD -->
-    <section class="screen active" id="screen-dashboard">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Total Members</div>
-          <div class="stat-value">348</div>
-          <div class="stat-delta">&#8593; 12 added this month</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">SMS Sent</div>
-          <div class="stat-value">1,240</div>
-          <div class="stat-delta">This year</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Newsletters</div>
-          <div class="stat-value">86</div>
-          <div class="stat-delta">Total delivered</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Avg Open Rate</div>
-          <div class="stat-value">72%</div>
-          <div class="stat-delta">&#8593; 4% vs last month</div>
-        </div>
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="page-title" id="topbar-title">Dashboard</span>
+        <span class="page-subtitle" id="topbar-sub"></span>
       </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost" onclick="openModal('add')">
+          <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1v12M1 7h12"/></svg>
+          Add Member
+        </button>
+        <button class="btn btn-gold" onclick="navigate('sms')">New Broadcast</button>
+      </div>
+    </header>
 
-      <div class="dash-grid">
-        <div style="display:flex;flex-direction:column;gap:20px;">
-          <!-- Quick compose -->
+    <div class="page-content">
+
+      <!-- DASHBOARD -->
+      <section class="screen active" id="screen-dashboard">
+        <div class="stats-grid" id="stats-grid">
+          <div class="loading-state" style="grid-column:1/-1;padding:24px;">
+            <div class="spinner"></div> Loading stats...
+          </div>
+        </div>
+        <div class="dash-grid">
           <div class="card">
             <div class="card-header">
               <span class="card-title">Quick Compose</span>
               <div style="display:flex;gap:6px;">
-                <button class="compose-tab active" onclick="switchTab(this,'sms-tab')">SMS</button>
-                <button class="compose-tab" onclick="switchTab(this,'email-tab')">Email</button>
+                <button class="compose-tab active" onclick="switchTab(this,'qtab-sms')">SMS</button>
+                <button class="compose-tab" onclick="switchTab(this,'qtab-email')">Email</button>
               </div>
             </div>
-            <div class="compose-card">
-              <div id="sms-tab">
-                <select class="field"><option>All Members (348)</option><option>Youth Group (62)</option><option>Choir (28)</option><option>Elders (12)</option></select>
-                <textarea class="field sms-textarea" placeholder="Type your message to the congregation..." id="sms-quick" oninput="updateChar('sms-quick','sms-count','sms-fill',160)"></textarea>
-                <div class="char-bar"><div class="char-fill" id="sms-fill" style="width:0%"></div></div>
-                <div class="compose-footer">
-                  <span class="char-count" id="sms-count">0 / 160</span>
-                  <button class="btn btn-gold">Send SMS</button>
+            <div style="padding:20px 22px;">
+              <div id="qtab-sms">
+                <select class="field" id="q-sms-group" style="margin-bottom:10px;">
+                  <option value="">All Members</option>
+                </select>
+                <textarea class="field" style="height:90px;margin-bottom:6px;" id="q-sms-body" placeholder="Type your message..." oninput="updateChar(this,'q-sms-count','q-sms-fill',160)"></textarea>
+                <div class="char-bar"><div class="char-fill" id="q-sms-fill"></div></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+                  <span style="font-size:11.5px;color:var(--muted);" id="q-sms-count">0 / 160</span>
+                  <button class="btn btn-gold" onclick="quickSend('sms')">Send SMS</button>
                 </div>
               </div>
-              <div id="email-tab" style="display:none;">
-                <select class="field"><option>All Members (348)</option><option>Youth Group (62)</option><option>Choir (28)</option><option>Elders (12)</option></select>
-                <input class="field" placeholder="Subject line..."/>
-                <textarea class="field" style="height:90px;" placeholder="Write your newsletter..."></textarea>
-                <div class="compose-footer">
-                  <span class="char-count">Newsletter</span>
-                  <button class="btn btn-dark">Send Email</button>
+              <div id="qtab-email" style="display:none;">
+                <select class="field" id="q-email-group" style="margin-bottom:10px;"><option value="">All Members</option></select>
+                <input class="field" id="q-email-subject" placeholder="Subject..." style="margin-bottom:10px;"/>
+                <textarea class="field" style="height:90px;margin-bottom:10px;" id="q-email-body" placeholder="Write your newsletter..."></textarea>
+                <div style="display:flex;justify-content:flex-end;">
+                  <button class="btn btn-dark" onclick="quickSend('email')">Send Email</button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:20px;">
-          <!-- Activity -->
           <div class="card">
             <div class="card-header">
               <span class="card-title">Recent Activity</span>
-              <span class="card-action" onclick="navigate('log')">View all</span>
+              <button class="card-action" onclick="navigate('log')">View all</button>
             </div>
-            <div class="activity-feed">
-              <div class="activity-item">
-                <div class="activity-dot-wrap"><div class="activity-dot dot-gold"></div></div>
-                <div class="activity-body">
-                  <div class="activity-text">Sunday reminder SMS sent to all 348 members</div>
-                  <div class="activity-meta">Today &middot; 8:00 AM</div>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot-wrap"><div class="activity-dot dot-dark"></div></div>
-                <div class="activity-body">
-                  <div class="activity-text">Easter newsletter delivered &mdash; 72% open rate</div>
-                  <div class="activity-meta">Apr 14 &middot; 9:30 AM</div>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot-wrap"><div class="activity-dot dot-light"></div></div>
-                <div class="activity-body">
-                  <div class="activity-text">3 new members added to the directory</div>
-                  <div class="activity-meta">Apr 12 &middot; 2:15 PM</div>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot-wrap"><div class="activity-dot dot-gold"></div></div>
-                <div class="activity-body">
-                  <div class="activity-text">Youth group SMS broadcast — 62 recipients</div>
-                  <div class="activity-meta">Apr 10 &middot; 11:00 AM</div>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot-wrap"><div class="activity-dot dot-dark"></div></div>
-                <div class="activity-body">
-                  <div class="activity-text">Monthly giving report newsletter sent</div>
-                  <div class="activity-meta">Apr 1 &middot; 8:00 AM</div>
-                </div>
-              </div>
+            <div id="activity-feed">
+              <div class="loading-state"><div class="spinner"></div></div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- MEMBERS -->
-    <section class="screen" id="screen-members">
-      <div class="members-toolbar">
-        <div class="search-wrap">
-          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M9.5 9.5L13 13"/></svg>
-          <input class="search-input" placeholder="Search members by name, phone, or email..."/>
-        </div>
-        <button class="filter-btn">
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor"><path d="M1 3h12M3 7h8M5 11h4"/></svg>
-          Filter
-        </button>
-        <button class="btn btn-ghost">Export CSV</button>
-        <button class="btn btn-dark" onclick="openModal()">+ Add Member</button>
-      </div>
-
-      <div class="members-table">
-        <div class="table-head">
-          <div>Name</div>
-          <div>Email</div>
-          <div>Phone</div>
-          <div>Group</div>
-          <div>Notify</div>
-          <div></div>
-        </div>
-
-        <div class="table-row">
-          <div class="member-cell">
-            <div class="member-avatar av-a">JA</div>
-            <div><div class="member-name-cell">James Anderson</div><div class="member-id">#0001</div></div>
+      <!-- MEMBERS -->
+      <section class="screen" id="screen-members">
+        <div class="members-toolbar">
+          <div class="search-wrap">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M9.5 9.5L13 13"/></svg>
+            <input class="search-input" id="member-search" placeholder="Search by name, phone or email..." oninput="searchMembers(this.value)"/>
           </div>
-          <div class="table-cell"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d5bfb4b8b0a6fbb4bbb1b0a7a6babb95b0b8b4bcb9fbb6bab8">[email&#160;protected]</a></div>
-          <div class="table-cell">(832) 555-0192</div>
-          <div class="table-cell">Elders</div>
-          <div><span class="badge badge-both">SMS & Email</span></div>
-          <div class="row-actions">
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 10L10 1l3 3-9 9H1v-3z"/></svg></button>
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h10M5 4V2h4v2M6 7v4M8 7v4M3 4l1 8h6l1-8"/></svg></button>
+          <button class="btn btn-ghost" onclick="exportMembers()">Export CSV</button>
+          <button class="btn btn-dark" onclick="openModal('add')">+ Add Member</button>
+        </div>
+        <div class="members-table">
+          <div class="table-head">
+            <div>Name</div><div>Email</div><div>Phone</div><div>Group</div><div>Notify</div><div></div>
+          </div>
+          <div id="members-list">
+            <div class="loading-state"><div class="spinner"></div> Loading members...</div>
           </div>
         </div>
+        <div id="members-pagination" style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;"></div>
+      </section>
 
-        <div class="table-row">
-          <div class="member-cell">
-            <div class="member-avatar av-b">ML</div>
-            <div><div class="member-name-cell">Martha Lewis</div><div class="member-id">#0002</div></div>
-          </div>
-          <div class="table-cell"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="81ece0f3f5e9e0afede4f6e8f2c1e4ece0e8edafe2eeec">[email&#160;protected]</a></div>
-          <div class="table-cell">(713) 555-0147</div>
-          <div class="table-cell">Choir</div>
-          <div><span class="badge badge-email">Email only</span></div>
-          <div class="row-actions">
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 10L10 1l3 3-9 9H1v-3z"/></svg></button>
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h10M5 4V2h4v2M6 7v4M8 7v4M3 4l1 8h6l1-8"/></svg></button>
-          </div>
-        </div>
-
-        <div class="table-row">
-          <div class="member-cell">
-            <div class="member-avatar av-c">DT</div>
-            <div><div class="member-name-cell">David Thompson</div><div class="member-id">#0003</div></div>
-          </div>
-          <div class="table-cell"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="791d570d111614090a1617391c14181015571a1614">[email&#160;protected]</a></div>
-          <div class="table-cell">(281) 555-0083</div>
-          <div class="table-cell">Youth</div>
-          <div><span class="badge badge-sms">SMS only</span></div>
-          <div class="row-actions">
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 10L10 1l3 3-9 9H1v-3z"/></svg></button>
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h10M5 4V2h4v2M6 7v4M8 7v4M3 4l1 8h6l1-8"/></svg></button>
-          </div>
-        </div>
-
-        <div class="table-row">
-          <div class="member-cell">
-            <div class="member-avatar av-d">SR</div>
-            <div><div class="member-name-cell">Susan Roberts</div><div class="member-id">#0004</div></div>
-          </div>
-          <div class="table-cell"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="88fbfdfbe9e6a6fae7eaedfafcfbc8ede5e9e1e4a6ebe7e5">[email&#160;protected]</a></div>
-          <div class="table-cell">(832) 555-0211</div>
-          <div class="table-cell">General</div>
-          <div><span class="badge badge-both">SMS & Email</span></div>
-          <div class="row-actions">
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 10L10 1l3 3-9 9H1v-3z"/></svg></button>
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h10M5 4V2h4v2M6 7v4M8 7v4M3 4l1 8h6l1-8"/></svg></button>
-          </div>
-        </div>
-
-        <div class="table-row">
-          <div class="member-cell">
-            <div class="member-avatar av-e">KW</div>
-            <div><div class="member-name-cell">Kevin Williams</div><div class="member-id">#0005</div></div>
-          </div>
-          <div class="table-cell"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4f246138262323262e223c0f2a222e2623612c2022">[email&#160;protected]</a></div>
-          <div class="table-cell">(713) 555-0390</div>
-          <div class="table-cell">Elders</div>
-          <div><span class="badge badge-inactive">Inactive</span></div>
-          <div class="row-actions">
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 10L10 1l3 3-9 9H1v-3z"/></svg></button>
-            <button class="icon-btn"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h10M5 4V2h4v2M6 7v4M8 7v4M3 4l1 8h6l1-8"/></svg></button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SMS -->
-    <section class="screen" id="screen-sms">
-      <div class="compose-layout">
-        <div class="compose-main">
-          <div class="field-group">
-            <label class="field-label">Recipients</label>
-            <div class="recipients-tags">
-              <span class="recipient-tag">All Members (348) <button>&#215;</button></span>
+      <!-- SMS -->
+      <section class="screen" id="screen-sms">
+        <div class="compose-layout">
+          <div class="compose-main">
+            <div class="field-group">
+              <label class="field-label">Recipients</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;" id="sms-group-pills"></div>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-              <button class="tag-pill selected">All (348)</button>
-              <button class="tag-pill">Elders (12)</button>
-              <button class="tag-pill">Youth (62)</button>
-              <button class="tag-pill">Choir (28)</button>
-              <button class="tag-pill">Custom</button>
-            </div>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Message</label>
-            <textarea class="field sms-textarea" placeholder="Write your SMS message here..." id="sms-main" oninput="updateChar('sms-main','sms-main-count','sms-main-fill',160)"></textarea>
-            <div class="char-bar"><div class="char-fill" id="sms-main-fill" style="width:0%"></div></div>
-            <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);">
-              <span id="sms-main-count">0 / 160 characters</span>
-              <span>1 SMS credit</span>
-            </div>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Sender Name</label>
-            <input class="field" value="Impact House Church" placeholder="Sender display name"/>
-          </div>
-        </div>
-
-        <div class="compose-sidebar-panel">
-          <div class="panel-section">
-            <div class="panel-section-title">Schedule</div>
-            <div class="schedule-options">
-              <div class="schedule-opt selected">
-                <div class="schedule-opt-dot"></div>
-                Send immediately
-              </div>
-              <div class="schedule-opt">
-                <div class="schedule-opt-dot"></div>
-                Schedule for later
+            <div class="field-group">
+              <label class="field-label">Message</label>
+              <textarea class="field" style="height:160px;" id="sms-body" placeholder="Write your SMS message..." oninput="updateChar(this,'sms-count','sms-fill',160)"></textarea>
+              <div class="char-bar"><div class="char-fill" id="sms-fill"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);">
+                <span id="sms-count">0 / 160</span><span id="sms-credits">1 SMS credit</span>
               </div>
             </div>
-          </div>
-          <div class="panel-section">
-            <div class="panel-section-title">Preview</div>
-            <div class="preview-box">
-              <span style="color:var(--muted);font-size:12px;">Impact House Church:</span><br/>
-              Your message will appear here as you type...
+            <div class="field-group">
+              <label class="field-label">Sender Name (display only)</label>
+              <input class="field" value="Impact House Church" id="sms-sender"/>
             </div>
           </div>
-          <div class="panel-section">
-            <div class="panel-section-title">Summary</div>
-            <div class="send-summary">
-              Sending to <strong>348 members</strong><br/>
-              Channel: <strong>SMS</strong><br/>
-              Credits used: <strong>348</strong><br/>
-              Estimated delivery: <strong>~2 min</strong>
+          <div class="compose-sidebar-panel">
+            <div class="panel-section">
+              <div class="panel-section-title">Schedule</div>
+              <button class="schedule-opt selected" onclick="selectSchedule(this)"><div class="schedule-opt-dot"></div>Send immediately</button>
+              <button class="schedule-opt" onclick="selectSchedule(this)"><div class="schedule-opt-dot"></div>Schedule for later</button>
             </div>
-          </div>
-          <div class="panel-section">
-            <button class="btn btn-gold" style="width:100%;justify-content:center;padding:11px;">
-              <svg viewBox="0 0 14 14" fill="currentColor" style="width:14px;height:14px;"><path d="M1 7l11-5-5 11-2-4-4-2z"/></svg>
-              Send SMS Broadcast
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- EMAIL -->
-    <section class="screen" id="screen-email">
-      <div class="compose-layout">
-        <div class="compose-main">
-          <div class="field-group">
-            <label class="field-label">Recipients</label>
-            <div class="recipients-tags">
-              <span class="recipient-tag">All Members (348) <button>&#215;</button></span>
+            <div class="panel-section">
+              <div class="panel-section-title">Summary</div>
+              <div class="send-summary" id="sms-summary">Select recipients above.</div>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-              <button class="tag-pill selected">All (348)</button>
-              <button class="tag-pill">Elders (12)</button>
-              <button class="tag-pill">Youth (62)</button>
-              <button class="tag-pill">Choir (28)</button>
-              <button class="tag-pill">Custom</button>
-            </div>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">From</label>
-            <input class="field" value="Impact House Church &lt;newsletter@impacthouse.org&gt;"/>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Subject Line</label>
-            <input class="field" placeholder="e.g. Sunday Service — April 20th | Impact House Church"/>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Newsletter Body</label>
-            <textarea class="field email-textarea" placeholder="Write your newsletter content here. You can use plain text or paste HTML..."></textarea>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label">Attachments</label>
-            <div style="border:1px dashed var(--border);border-radius:8px;padding:18px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;">
-              Drop files here or <span style="color:var(--gold-dark);font-weight:500;">browse</span> &mdash; PDF, images up to 5MB
+            <div class="panel-section">
+              <button class="btn btn-gold" style="width:100%;justify-content:center;padding:11px;" id="sms-send-btn" onclick="sendBroadcast('sms')">
+                <svg viewBox="0 0 14 14" fill="currentColor" style="width:14px;height:14px;"><path d="M1 7l11-5-5 11-2-4-4-2z"/></svg>
+                Send SMS Broadcast
+              </button>
             </div>
           </div>
         </div>
+      </section>
 
-        <div class="compose-sidebar-panel">
-          <div class="panel-section">
-            <div class="panel-section-title">Schedule</div>
-            <div class="schedule-options">
-              <div class="schedule-opt selected">
-                <div class="schedule-opt-dot"></div>
-                Send immediately
-              </div>
-              <div class="schedule-opt">
-                <div class="schedule-opt-dot"></div>
-                Schedule for later
-              </div>
+      <!-- EMAIL -->
+      <section class="screen" id="screen-email">
+        <div class="compose-layout">
+          <div class="compose-main">
+            <div class="field-group">
+              <label class="field-label">Recipients</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;" id="email-group-pills"></div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">From</label>
+              <input class="field" value="Impact House Church &lt;newsletter@impacthouse.org&gt;" id="email-from"/>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Subject Line</label>
+              <input class="field" id="email-subject" placeholder="e.g. Sunday Service — This Week at Impact House"/>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Newsletter Body</label>
+              <textarea class="field" style="height:220px;" id="email-body" placeholder="Write your newsletter content here..."></textarea>
             </div>
           </div>
-          <div class="panel-section">
-            <div class="panel-section-title">Checklist</div>
-            <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--mid);">
-              <div style="display:flex;align-items:center;gap:8px;"><span style="color:#3a5e3a;">&#10003;</span> Recipients selected</div>
-              <div style="display:flex;align-items:center;gap:8px;"><span style="color:#bbb;">&#9675;</span> Subject line added</div>
-              <div style="display:flex;align-items:center;gap:8px;"><span style="color:#bbb;">&#9675;</span> Body written</div>
-              <div style="display:flex;align-items:center;gap:8px;"><span style="color:#bbb;">&#9675;</span> Preview reviewed</div>
+          <div class="compose-sidebar-panel">
+            <div class="panel-section">
+              <div class="panel-section-title">Schedule</div>
+              <button class="schedule-opt selected" onclick="selectSchedule(this)"><div class="schedule-opt-dot"></div>Send immediately</button>
+              <button class="schedule-opt" onclick="selectSchedule(this)"><div class="schedule-opt-dot"></div>Schedule for later</button>
+            </div>
+            <div class="panel-section">
+              <div class="panel-section-title">Checklist</div>
+              <div id="email-checklist" style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--mid);"></div>
+            </div>
+            <div class="panel-section">
+              <div class="panel-section-title">Summary</div>
+              <div class="send-summary" id="email-summary">Select recipients above.</div>
+            </div>
+            <div class="panel-section">
+              <button class="btn btn-gold" style="width:100%;justify-content:center;padding:11px;" id="email-send-btn" onclick="sendBroadcast('email')">
+                <svg viewBox="0 0 14 14" fill="currentColor" style="width:14px;height:14px;"><path d="M1 7l11-5-5 11-2-4-4-2z"/></svg>
+                Send Newsletter
+              </button>
             </div>
           </div>
-          <div class="panel-section">
-            <div class="panel-section-title">Summary</div>
-            <div class="send-summary">
-              Sending to <strong>348 members</strong><br/>
-              Channel: <strong>Email</strong><br/>
-              Unsubscribes: <strong>auto-handled</strong>
-            </div>
-          </div>
-          <div class="panel-section">
-            <button class="btn btn-dark" style="width:100%;justify-content:center;padding:11px;margin-bottom:8px;">
-              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;"><rect x="1" y="2" width="12" height="10" rx="1"/><path d="M1 4l6 5 6-5"/></svg>
-              Send Preview to Me
-            </button>
-            <button class="btn btn-gold" style="width:100%;justify-content:center;padding:11px;">
-              <svg viewBox="0 0 14 14" fill="currentColor" style="width:14px;height:14px;"><path d="M1 7l11-5-5 11-2-4-4-2z"/></svg>
-              Send Newsletter
-            </button>
-          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- LOG -->
-    <section class="screen" id="screen-log">
-      <div class="log-filters">
-        <button class="log-filter-tab active">All</button>
-        <button class="log-filter-tab">SMS</button>
-        <button class="log-filter-tab">Email</button>
-        <button class="log-filter-tab">This Month</button>
-        <button class="log-filter-tab">Scheduled</button>
-      </div>
-
-      <div class="log-list">
-        <div class="log-card">
-          <div class="log-type-icon log-sms">
-            <svg viewBox="0 0 16 16" fill="currentColor" style="color:#3a5e3a;"><path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>
-          </div>
-          <div>
-            <div class="log-title">Sunday Service Reminder</div>
-            <div class="log-meta">SMS &middot; All Members (348) &middot; Today, 8:00 AM &middot; Delivered</div>
-          </div>
-          <div class="log-stats">
-            <div class="log-stat-big">348</div>
-            <div class="log-stat-label">delivered</div>
-          </div>
+      <!-- LOG -->
+      <section class="screen" id="screen-log">
+        <div class="log-filters">
+          <button class="log-filter-tab active" onclick="filterLog(this,'')">All</button>
+          <button class="log-filter-tab" onclick="filterLog(this,'sms')">SMS</button>
+          <button class="log-filter-tab" onclick="filterLog(this,'email')">Email</button>
         </div>
-
-        <div class="log-card">
-          <div class="log-type-icon log-email">
-            <svg viewBox="0 0 16 16" fill="currentColor" style="color:#2a4a6e;"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 5l7 5 7-5" stroke="#2a4a6e" stroke-width="1" fill="none"/></svg>
-          </div>
-          <div>
-            <div class="log-title">Easter Sunday Newsletter</div>
-            <div class="log-meta">Email &middot; All Members (348) &middot; Apr 14, 9:30 AM &middot; 72% open rate</div>
-          </div>
-          <div class="log-stats">
-            <div class="log-stat-big">251</div>
-            <div class="log-stat-label">opened</div>
-          </div>
+        <div id="log-list">
+          <div class="loading-state"><div class="spinner"></div> Loading history...</div>
         </div>
+      </section>
 
-        <div class="log-card">
-          <div class="log-type-icon log-sms">
-            <svg viewBox="0 0 16 16" fill="currentColor" style="color:#3a5e3a;"><path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>
-          </div>
-          <div>
-            <div class="log-title">Youth Group Meeting Reminder</div>
-            <div class="log-meta">SMS &middot; Youth Group (62) &middot; Apr 10, 11:00 AM &middot; Delivered</div>
-          </div>
-          <div class="log-stats">
-            <div class="log-stat-big">62</div>
-            <div class="log-stat-label">delivered</div>
-          </div>
-        </div>
-
-        <div class="log-card">
-          <div class="log-type-icon log-email">
-            <svg viewBox="0 0 16 16" fill="currentColor" style="color:#2a4a6e;"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 5l7 5 7-5" stroke="#2a4a6e" stroke-width="1" fill="none"/></svg>
-          </div>
-          <div>
-            <div class="log-title">Monthly Giving & Stewardship Report</div>
-            <div class="log-meta">Email &middot; All Members (348) &middot; Apr 1, 8:00 AM &middot; 68% open rate</div>
-          </div>
-          <div class="log-stats">
-            <div class="log-stat-big">236</div>
-            <div class="log-stat-label">opened</div>
-          </div>
-        </div>
-
-        <div class="log-card">
-          <div class="log-type-icon log-sms">
-            <svg viewBox="0 0 16 16" fill="currentColor" style="color:#3a5e3a;"><path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>
-          </div>
-          <div>
-            <div class="log-title">Good Friday Service Announcement</div>
-            <div class="log-meta">SMS &middot; All Members (348) &middot; Mar 28, 9:00 AM &middot; Delivered</div>
-          </div>
-          <div class="log-stats">
-            <div class="log-stat-big">345</div>
-            <div class="log-stat-label">delivered</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
+    </div>
   </div>
 </div>
 
-<!-- ADD MEMBER MODAL -->
-<div class="modal-overlay" id="modal">
+<!-- MEMBER MODAL -->
+<div class="modal-overlay" id="member-modal">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">Add New Member</span>
+      <span class="modal-title" id="modal-title">Add New Member</span>
       <button class="modal-close" onclick="closeModal()">&#215;</button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="modal-member-id"/>
       <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">First Name</label>
-          <input class="form-field" placeholder="e.g. James"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Last Name</label>
-          <input class="form-field" placeholder="e.g. Anderson"/>
-        </div>
+        <div class="form-group"><label class="form-label">First Name</label><input class="form-field" id="m-first" placeholder="e.g. James"/></div>
+        <div class="form-group"><label class="form-label">Last Name</label><input class="form-field" id="m-last" placeholder="e.g. Anderson"/></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Email Address</label>
-        <input class="form-field" type="email" placeholder="member@email.com"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Phone Number</label>
-        <input class="form-field" type="tel" placeholder="(832) 555-0000"/>
-      </div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-field" type="email" id="m-email" placeholder="member@email.com"/></div>
+      <div class="form-group"><label class="form-label">Phone Number</label><input class="form-field" type="tel" id="m-phone" placeholder="(832) 555-0000"/></div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Group</label>
-          <select class="form-field">
-            <option>General</option>
-            <option>Elders</option>
-            <option>Youth</option>
-            <option>Choir</option>
-            <option>Deacons</option>
-          </select>
+          <select class="form-field" id="m-group"><option value="">General</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Status</label>
-          <select class="form-field">
-            <option>Active</option>
-            <option>Inactive</option>
-          </select>
+          <select class="form-field" id="m-status"><option value="active">Active</option><option value="inactive">Inactive</option></select>
         </div>
       </div>
       <div class="form-group">
         <label class="form-label">Notification Preference</label>
         <div class="notify-options">
-          <button class="notify-opt selected" onclick="toggleNotify(this)">SMS</button>
-          <button class="notify-opt" onclick="toggleNotify(this)">Email</button>
-          <button class="notify-opt" onclick="toggleNotify(this)">Both</button>
-          <button class="notify-opt" onclick="toggleNotify(this)">None</button>
+          <button class="notify-opt selected" data-sms="true" data-email="false" onclick="toggleNotify(this)">SMS</button>
+          <button class="notify-opt" data-sms="false" data-email="true" onclick="toggleNotify(this)">Email</button>
+          <button class="notify-opt" data-sms="true" data-email="true" onclick="toggleNotify(this)">Both</button>
+          <button class="notify-opt" data-sms="false" data-email="false" onclick="toggleNotify(this)">None</button>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-dark">Add Member</button>
+      <button class="btn btn-dark" id="modal-save-btn" onclick="saveMember()">Add Member</button>
     </div>
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-  const screens = {
-    dashboard: { title: 'Dashboard', sub: 'Good morning, Pastor' },
-    members: { title: 'Members', sub: '348 registered members' },
-    sms: { title: 'Send SMS', sub: 'Compose a text broadcast' },
-    email: { title: 'Email Newsletter', sub: 'Write and send to your congregation' },
-    log: { title: 'Message Log', sub: 'Full history of all broadcasts' }
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+const API = window.ENV_API_URL || 'https://impact-house.onrender.com/api';
+let TOKEN = localStorage.getItem('ihc_token');
+let currentAdmin = null;
+let allGroups = [];
+let memberPage = 1;
+let memberSearch = '';
+let selectedSmsGroup = '';
+let selectedEmailGroup = '';
+let logChannel = '';
+let memberSearchTimer;
+
+// ── API HELPERS ──────────────────────────────────────────
+const req = async (method, path, body) => {
+  const res = await fetch(API + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}) },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+};
+const get  = p => req('GET', p);
+const post = (p, b) => req('POST', p, b);
+const patch = (p, b) => req('PATCH', p, b);
+const del  = p => req('DELETE', p);
+
+// ── TOAST ────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = '', 3500);
+}
+
+// ── AUTH ─────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  const btn   = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  errEl.classList.remove('show');
+  if (!email || !pass) { errEl.textContent = 'Please enter your email and password.'; errEl.classList.add('show'); return; }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in...';
+  try {
+    const data = await post('/auth/login', { email, password: pass });
+    TOKEN = data.token;
+    localStorage.setItem('ihc_token', TOKEN);
+    currentAdmin = data.admin;
+    launchApp();
+  } catch (e) {
+    errEl.textContent = e.message || 'Invalid email or password.';
+    errEl.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+}
+
+function doLogout() {
+  TOKEN = null;
+  localStorage.removeItem('ihc_token');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+async function launchApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  if (currentAdmin) {
+    document.getElementById('admin-name').textContent = currentAdmin.name;
+    const initials = currentAdmin.name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase();
+    document.getElementById('admin-avatar').textContent = initials;
+  }
+  await Promise.all([loadGroups(), loadDashboard()]);
+}
+
+// ── AUTO LOGIN ───────────────────────────────────────────
+if (TOKEN) {
+  get('/auth/me').then(admin => {
+    currentAdmin = admin;
+    launchApp();
+  }).catch(() => {
+    TOKEN = null;
+    localStorage.removeItem('ihc_token');
+  });
+}
+
+// ── NAVIGATION ───────────────────────────────────────────
+const pageMeta = {
+  dashboard: ['Dashboard', ''],
+  members:   ['Members', ''],
+  sms:       ['Send SMS', 'Compose a text broadcast'],
+  email:     ['Email Newsletter', 'Write and send to your congregation'],
+  log:       ['Message Log', 'Full history of all broadcasts']
+};
+
+function navigate(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  const item = document.querySelector('[data-screen="' + id + '"]');
+  if (item) item.classList.add('active');
+  const [title, sub] = pageMeta[id];
+  document.getElementById('topbar-title').textContent = title;
+  document.getElementById('topbar-sub').textContent = sub;
+  if (id === 'members') loadMembers();
+  if (id === 'log') loadLog();
+  if (id === 'sms' || id === 'email') renderGroupPills(id);
+}
+
+document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => navigate(item.dataset.screen)));
+
+// ── GROUPS ───────────────────────────────────────────────
+async function loadGroups() {
+  try {
+    allGroups = await get('/members/groups/list');
+    // Populate group selects
+    ['q-sms-group','q-email-group','m-group'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const current = el.value;
+      el.innerHTML = '<option value="">All Members</option>';
+      allGroups.forEach(g => {
+        const o = document.createElement('option');
+        o.value = g.id; o.textContent = g.name;
+        el.appendChild(o);
+      });
+      el.value = current;
+    });
+  } catch(e) { console.error('Groups:', e); }
+}
+
+function renderGroupPills(channel) {
+  const containerId = channel + '-group-pills';
+  const el = document.getElementById(containerId);
+  const selected = channel === 'sms' ? selectedSmsGroup : selectedEmailGroup;
+  el.innerHTML = '';
+  const allPill = document.createElement('button');
+  allPill.className = 'tag-pill' + (selected === '' ? ' selected' : '');
+  allPill.textContent = 'All Members';
+  allPill.onclick = () => setGroupPill(channel, '');
+  el.appendChild(allPill);
+  allGroups.forEach(g => {
+    const p = document.createElement('button');
+    p.className = 'tag-pill' + (selected == g.id ? ' selected' : '');
+    p.textContent = g.name;
+    p.onclick = () => setGroupPill(channel, g.id);
+    el.appendChild(p);
+  });
+  updateSummary(channel);
+}
+
+function setGroupPill(channel, groupId) {
+  if (channel === 'sms') selectedSmsGroup = groupId;
+  else selectedEmailGroup = groupId;
+  renderGroupPills(channel);
+}
+
+function updateSummary(channel) {
+  const groupId = channel === 'sms' ? selectedSmsGroup : selectedEmailGroup;
+  const group = allGroups.find(g => g.id == groupId);
+  const label = group ? group.name : 'All Members';
+  const summaryId = channel + '-summary';
+  const el = document.getElementById(summaryId);
+  if (el) el.innerHTML = `Sending to <strong>${label}</strong><br/>Channel: <strong>${channel.toUpperCase()}</strong>`;
+}
+
+// ── DASHBOARD ────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const data = await get('/stats');
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Members</div><div class="stat-value">${data.total_members.toLocaleString()}</div><div class="stat-delta">&#8593; ${data.new_this_month} added this month</div></div>
+      <div class="stat-card"><div class="stat-label">SMS Sent</div><div class="stat-value">${data.total_sms_sent.toLocaleString()}</div><div class="stat-delta">All time</div></div>
+      <div class="stat-card"><div class="stat-label">Newsletters</div><div class="stat-value">${data.total_emails_sent.toLocaleString()}</div><div class="stat-delta">Total delivered</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Open Rate</div><div class="stat-value">${data.avg_open_rate}%</div><div class="stat-delta">Email newsletters</div></div>
+    `;
+    document.getElementById('topbar-sub').textContent = `Welcome back, ${currentAdmin?.name || 'Pastor'}`;
+    renderActivity(data.recent_activity || []);
+    // Update members subtitle
+    pageMeta.members[1] = `${data.total_members.toLocaleString()} registered members`;
+  } catch(e) {
+    document.getElementById('stats-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>Could not load stats. Is the backend running?</p></div>';
+  }
+}
+
+function renderActivity(items) {
+  const el = document.getElementById('activity-feed');
+  if (!items.length) { el.innerHTML = '<div class="empty-state"><p>No activity yet.</p></div>'; return; }
+  el.innerHTML = items.slice(0,6).map(a => {
+    const dot = a.channel === 'sms' ? 'dot-gold' : a.type === 'member' ? 'dot-light' : 'dot-dark';
+    const time = a.event_time ? new Date(a.event_time).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+    return `<div class="activity-item">
+      <div class="activity-dot ${dot}" style="margin-top:6px;flex-shrink:0;"></div>
+      <div><div class="activity-text">${a.title}</div><div class="activity-meta">${time}</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── MEMBERS ──────────────────────────────────────────────
+async function loadMembers(page = 1) {
+  memberPage = page;
+  document.getElementById('members-list').innerHTML = '<div class="loading-state"><div class="spinner"></div> Loading...</div>';
+  try {
+    const params = { page, limit: 20 };
+    if (memberSearch) params.search = memberSearch;
+    const qs = new URLSearchParams(params).toString();
+    const data = await get('/members?' + qs);
+    renderMembersTable(data.members, data.total);
+  } catch(e) {
+    document.getElementById('members-list').innerHTML = '<div class="empty-state"><p>Failed to load members.</p></div>';
+  }
+}
+
+function searchMembers(val) {
+  memberSearch = val;
+  clearTimeout(memberSearchTimer);
+  memberSearchTimer = setTimeout(() => loadMembers(1), 350);
+}
+
+const avatarColors = ['#ede9e3','#e6ede8','#e8e4f0','#f0e8e4','#e4ecf0'];
+const avatarTextColors = ['#5a5450','#3d5c44','#4a3f6e','#6e4a3f','#3f5e6e'];
+
+function renderMembersTable(members, total) {
+  const el = document.getElementById('members-list');
+  if (!members.length) {
+    el.innerHTML = '<div class="empty-state"><p>No members found.</p></div>';
+    document.getElementById('members-pagination').innerHTML = '';
+    return;
+  }
+  el.innerHTML = members.map((m, i) => {
+    const initials = (m.first_name[0] + m.last_name[0]).toUpperCase();
+    const ci = i % 5;
+    const badge = m.notify_sms && m.notify_email ? '<span class="badge badge-both">SMS & Email</span>'
+                : m.notify_sms ? '<span class="badge badge-sms">SMS only</span>'
+                : m.notify_email ? '<span class="badge badge-email">Email only</span>'
+                : '<span class="badge badge-inactive">None</span>';
+    const statusBadge = m.status === 'inactive' ? '<span class="badge badge-inactive" style="margin-left:4px;">Inactive</span>' : '';
+    return `<div class="table-row">
+      <div class="member-cell">
+        <div class="member-avatar" style="background:${avatarColors[ci]};color:${avatarTextColors[ci]}">${initials}</div>
+        <div><div class="member-name-cell">${m.first_name} ${m.last_name}${statusBadge}</div><div class="member-id">#${String(m.id).padStart(4,'0')}</div></div>
+      </div>
+      <div class="table-cell">${m.email || '—'}</div>
+      <div class="table-cell">${m.phone || '—'}</div>
+      <div class="table-cell">${m.group_name || 'General'}</div>
+      <div>${badge}</div>
+      <div class="row-actions">
+        <button class="icon-btn" title="Edit" onclick="openModal('edit', ${JSON.stringify(m).replace(/"/g,'&quot;')})">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 10L10 1l3 3-9 9H1v-3z"/></svg>
+        </button>
+        <button class="icon-btn danger" title="Delete" onclick="deleteMember(${m.id}, '${m.first_name} ${m.last_name}')">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h10M5 4V2h4v2M6 7v4M8 7v4M3 4l1 8h6l1-8"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Pagination
+  const pages = Math.ceil(total / 20);
+  const pag = document.getElementById('members-pagination');
+  pag.innerHTML = pages > 1 ? Array.from({length: pages}, (_,i) => `<button class="btn ${i+1===memberPage?'btn-dark':'btn-ghost'}" style="padding:6px 12px;min-width:36px;" onclick="loadMembers(${i+1})">${i+1}</button>`).join('') : '';
+}
+
+function exportMembers() {
+  toast('Export feature coming soon — requires backend CSV endpoint.', 'error');
+}
+
+// ── MEMBER MODAL ─────────────────────────────────────────
+function openModal(mode, member) {
+  document.getElementById('modal-member-id').value = member ? member.id : '';
+  document.getElementById('modal-title').textContent = mode === 'edit' ? 'Edit Member' : 'Add New Member';
+  document.getElementById('modal-save-btn').textContent = mode === 'edit' ? 'Save Changes' : 'Add Member';
+  document.getElementById('m-first').value = member?.first_name || '';
+  document.getElementById('m-last').value  = member?.last_name  || '';
+  document.getElementById('m-email').value = member?.email || '';
+  document.getElementById('m-phone').value = member?.phone || '';
+  document.getElementById('m-status').value = member?.status || 'active';
+
+  // Group select
+  const gSelect = document.getElementById('m-group');
+  gSelect.innerHTML = '<option value="">General</option>';
+  allGroups.forEach(g => { const o = document.createElement('option'); o.value = g.id; o.textContent = g.name; gSelect.appendChild(o); });
+  if (member?.group_id) gSelect.value = member.group_id;
+
+  // Notify pref
+  document.querySelectorAll('.notify-opt').forEach(btn => {
+    btn.classList.remove('selected');
+    const sms   = btn.dataset.sms === 'true';
+    const email = btn.dataset.email === 'true';
+    if (member) {
+      if (sms === member.notify_sms && email === member.notify_email) btn.classList.add('selected');
+    } else if (sms && !email) btn.classList.add('selected');
+  });
+
+  document.getElementById('member-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('member-modal').classList.remove('open'); }
+
+document.getElementById('member-modal').addEventListener('click', e => { if (e.target.id === 'member-modal') closeModal(); });
+
+function toggleNotify(btn) {
+  document.querySelectorAll('.notify-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+async function saveMember() {
+  const id = document.getElementById('modal-member-id').value;
+  const notifyBtn = document.querySelector('.notify-opt.selected');
+  const payload = {
+    first_name:   document.getElementById('m-first').value.trim(),
+    last_name:    document.getElementById('m-last').value.trim(),
+    email:        document.getElementById('m-email').value.trim() || null,
+    phone:        document.getElementById('m-phone').value.trim() || null,
+    group_id:     document.getElementById('m-group').value || null,
+    status:       document.getElementById('m-status').value,
+    notify_sms:   notifyBtn?.dataset.sms   === 'true',
+    notify_email: notifyBtn?.dataset.email === 'true',
   };
-
-  function navigate(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.getElementById('screen-' + id).classList.add('active');
-    document.querySelector('[data-screen="' + id + '"]').classList.add('active');
-    document.getElementById('topbar-title').textContent = screens[id].title;
-    document.getElementById('topbar-sub').textContent = screens[id].sub;
+  if (!payload.first_name || !payload.last_name) { toast('First and last name are required.', 'error'); return; }
+  const btn = document.getElementById('modal-save-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    if (id) {
+      await patch('/members/' + id, payload);
+      toast('Member updated successfully.');
+    } else {
+      await post('/members', payload);
+      toast('Member added successfully.');
+    }
+    closeModal();
+    loadMembers(memberPage);
+    loadDashboard();
+  } catch(e) {
+    toast(e.message || 'Failed to save member.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = id ? 'Save Changes' : 'Add Member';
   }
+}
 
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => navigate(item.dataset.screen));
-  });
+async function deleteMember(id, name) {
+  if (!confirm(`Remove ${name} from the directory? This cannot be undone.`)) return;
+  try {
+    await del('/members/' + id);
+    toast(`${name} removed.`);
+    loadMembers(memberPage);
+    loadDashboard();
+  } catch(e) { toast(e.message || 'Failed to delete member.', 'error'); }
+}
 
-  function switchTab(btn, tabId) {
-    btn.closest('.card-header').querySelectorAll('.compose-tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    const card = btn.closest('.card');
-    card.querySelectorAll('#sms-tab, #email-tab').forEach(t => t.style.display = 'none');
-    card.querySelector('#' + tabId).style.display = 'block';
+// ── BROADCAST SEND ────────────────────────────────────────
+async function quickSend(channel) {
+  const groupId = document.getElementById('q-' + channel + '-group').value;
+  const body = document.getElementById('q-' + channel + '-body').value.trim();
+  const subject = channel === 'email' ? document.getElementById('q-email-subject').value.trim() : 'Message';
+  if (!body) { toast('Please write a message first.', 'error'); return; }
+  if (channel === 'email' && !subject) { toast('Please add a subject line.', 'error'); return; }
+  const group = allGroups.find(g => g.id == groupId);
+  const payload = {
+    title: subject || 'Quick ' + channel.toUpperCase() + ' broadcast',
+    body, subject, channel,
+    recipient_type: groupId ? 'group' : 'all',
+    group_id: groupId || null,
+    send_now: true
+  };
+  try {
+    await post('/messages', payload);
+    toast('Broadcast sent successfully!');
+    document.getElementById('q-' + channel + '-body').value = '';
+    if (channel === 'email') document.getElementById('q-email-subject').value = '';
+    loadDashboard();
+  } catch(e) { toast(e.message || 'Failed to send.', 'error'); }
+}
+
+async function sendBroadcast(channel) {
+  const groupId = channel === 'sms' ? selectedSmsGroup : selectedEmailGroup;
+  const body    = document.getElementById(channel + '-body').value.trim();
+  const subject = channel === 'email' ? document.getElementById('email-subject').value.trim() : null;
+  const title   = subject || 'SMS Broadcast — ' + new Date().toLocaleDateString();
+  if (!body) { toast('Please write a message.', 'error'); return; }
+  if (channel === 'email' && !subject) { toast('A subject line is required.', 'error'); return; }
+  const btn = document.getElementById(channel + '-send-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sending...';
+  try {
+    const data = await post('/messages', {
+      title, body, subject, channel,
+      recipient_type: groupId ? 'group' : 'all',
+      group_id: groupId || null,
+      send_now: true
+    });
+    toast(`Broadcast sent to ${data.total_sent || 0} members!`);
+    document.getElementById(channel + '-body').value = '';
+    if (channel === 'email') document.getElementById('email-subject').value = '';
+    navigate('log');
+  } catch(e) {
+    toast(e.message || 'Failed to send.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 14 14" fill="currentColor" style="width:14px;height:14px;"><path d="M1 7l11-5-5 11-2-4-4-2z"/></svg> Send ' + (channel === 'sms' ? 'SMS Broadcast' : 'Newsletter');
   }
+}
 
-  function updateChar(textareaId, countId, fillId, max) {
-    const len = document.getElementById(textareaId).value.length;
-    const el = document.getElementById(countId);
-    if (el) el.textContent = len + ' / ' + max + (len > max ? ' — exceeds limit' : ' characters');
-    const fill = document.getElementById(fillId);
-    if (fill) fill.style.width = Math.min((len / max) * 100, 100) + '%';
+// Email checklist watcher
+['email-subject','email-body'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updateEmailChecklist);
+});
+
+function updateEmailChecklist() {
+  const subject = document.getElementById('email-subject').value.trim();
+  const body    = document.getElementById('email-body').value.trim();
+  const checks  = [
+    { label: 'Recipients selected', ok: true },
+    { label: 'Subject line added',  ok: !!subject },
+    { label: 'Body written',        ok: !!body },
+  ];
+  document.getElementById('email-checklist').innerHTML = checks.map(c =>
+    `<div style="display:flex;align-items:center;gap:8px;"><span style="color:${c.ok?'#3a5e3a':'#bbb'};">${c.ok?'✓':'○'}</span>${c.label}</div>`
+  ).join('');
+}
+
+// ── LOG ───────────────────────────────────────────────────
+async function loadLog() {
+  document.getElementById('log-list').innerHTML = '<div class="loading-state"><div class="spinner"></div> Loading...</div>';
+  try {
+    const qs = logChannel ? '?channel=' + logChannel : '';
+    const data = await get('/messages' + qs);
+    renderLog(data.messages);
+  } catch(e) {
+    document.getElementById('log-list').innerHTML = '<div class="empty-state"><p>Failed to load message history.</p></div>';
   }
+}
 
-  function openModal() { document.getElementById('modal').classList.add('open'); }
-  function closeModal() { document.getElementById('modal').classList.remove('open'); }
-
-  document.getElementById('modal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
-
-  function toggleNotify(btn) {
-    btn.closest('.notify-options').querySelectorAll('.notify-opt').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
+function renderLog(messages) {
+  const el = document.getElementById('log-list');
+  if (!messages.length) {
+    el.innerHTML = '<div class="empty-state"><p>No messages sent yet.</p></div>'; return;
   }
+  el.innerHTML = '<div class="log-list">' + messages.map(m => {
+    const isSms = m.channel === 'sms';
+    const icon = isSms
+      ? `<svg viewBox="0 0 16 16" fill="currentColor" style="color:#3a5e3a;width:18px;height:18px;"><path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>`
+      : `<svg viewBox="0 0 16 16" fill="currentColor" style="color:#2a4a6e;width:18px;height:18px;"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 5l7 5 7-5" stroke="#2a4a6e" stroke-width="1" fill="none"/></svg>`;
+    const date = m.sent_at ? new Date(m.sent_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Draft';
+    const stat = isSms ? m.total_delivered || m.total_sent || 0 : m.total_opened || 0;
+    const statLabel = isSms ? 'delivered' : 'opened';
+    const openRate = !isSms && m.total_sent ? Math.round(m.total_opened / m.total_sent * 100) + '%' : '';
+    return `<div class="log-card">
+      <div class="log-type-icon ${isSms?'log-sms':'log-email'}">${icon}</div>
+      <div>
+        <div class="log-title">${m.title}</div>
+        <div class="log-meta">${m.channel.toUpperCase()} &middot; ${m.group_name || 'All Members'} &middot; ${date}${openRate ? ' &middot; ' + openRate + ' open rate' : ''}</div>
+      </div>
+      <div class="log-stats">
+        <div class="log-stat-big">${stat.toLocaleString()}</div>
+        <div class="log-stat-label">${statLabel}</div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
 
-  document.querySelectorAll('.schedule-opt').forEach(opt => {
-    opt.addEventListener('click'
+function filterLog(btn, channel) {
+  document.querySelectorAll('.log-filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  logChannel = channel;
+  loadLog();
+}
+
+// ── UTILITIES ─────────────────────────────────────────────
+function switchTab(btn, tabId) {
+  const header = btn.closest('.card-header') || btn.parentElement;
+  header.querySelectorAll('.compose-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const card = btn.closest('.card');
+  card.querySelectorAll('[id^="qtab-"]').forEach(t => t.style.display = 'none');
+  card.querySelector('#' + tabId).style.display = 'block';
+}
+
+function updateChar(textarea, countId, fillId, max) {
+  const len = typeof textarea === 'string' ? document.getElementById(textarea).value.length : textarea.value.length;
+  const countEl = document.getElementById(countId);
+  if (countEl) countEl.textContent = len + ' / ' + max + (len > max ? ' — exceeds limit' : '');
+  const fillEl = document.getElementById(fillId);
+  if (fillEl) fillEl.style.width = Math.min((len / max) * 100, 100) + '%';
+}
+
+function selectSchedule(btn) {
+  btn.closest('.panel-section').querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+// Init email checklist
+updateEmailChecklist();
+</script>
+</body>
+</html>
