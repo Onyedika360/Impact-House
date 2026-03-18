@@ -2,12 +2,9 @@
   "version": 2,
   "name": "impact-house-church",
   "builds": [
-    { "src": "frontend/**", "use": "@vercel/static" }
+    { "src": "frontend/index.html", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/frontend/$1" }
-  ],
-  "env": {
-    "ENV_API_URL": "https://impact-house-api.onrender.com/api"
-  }
+    { "src": "/(.*)", "dest": "/frontend/index.html" }
+  ]
 }
