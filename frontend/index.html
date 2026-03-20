@@ -598,17 +598,20 @@ async function doLogout() {
 const req = async (method, path, body) => {
   let token;
   try {
-    token = await window.Clerk.session.getToken();
+    token = await window.Clerk.session?.getToken();
   } catch(e) {
-    window.location.reload();
-    return;
+    console.error('Token error:', e);
   }
   const res = await fetch(API + path, {
     method,
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
     body: body ? JSON.stringify(body) : undefined
   });
-  if (res.status === 401) { window.location.reload(); return; }
+  if (res.status === 401) {
+    await window.Clerk.signOut();
+    window.location.reload();
+    return;
+  }
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
