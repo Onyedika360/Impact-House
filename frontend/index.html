@@ -549,10 +549,31 @@ window.addEventListener('load', async () => {
 });
 
 async function bootApp(clerk) {
-  document.getElementById('auth-loading').style.display = 'none';
   currentUser = clerk.user;
 
-  // Token is fetched fresh on every API call — no interval needed
+  // Verify this user is an authorized admin before showing the app
+  try {
+    const token = await clerk.session.getToken();
+    const res = await fetch(API + '/auth/me', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (res.status === 403) {
+      document.getElementById('auth-loading').innerHTML = `
+        <div style="text-align:center;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:#f5f2ed;margin-bottom:10px;">Access Denied</div>
+          <div style="font-size:13px;color:#888;margin-bottom:24px;">You are not authorised to access this portal.<br/>Contact your church administrator.</div>
+          <button onclick="window.Clerk.signOut().then(()=>window.location.reload())"
+            style="padding:9px 22px;background:#c9a96e;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;">
+            Sign Out
+          </button>
+        </div>`;
+      return;
+    }
+  } catch(e) {
+    // If backend unreachable, proceed — API calls will fail individually
+  }
+
+  document.getElementById('auth-loading').style.display = 'none';
 
   // Update sidebar user info
   const name = [currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') || 'Admin';
