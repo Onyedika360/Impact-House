@@ -1,8 +1,4 @@
-const { createClerkClient } = require('@clerk/backend');
-
-const clerk = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY,
-});
+const { verifyToken } = require('@clerk/backend');
 
 // Comma-separated list of allowed Clerk user IDs, e.g. ALLOWED_CLERK_IDS=user_abc123,user_xyz456
 const ALLOWED_IDS = process.env.ALLOWED_CLERK_IDS
@@ -18,7 +14,7 @@ module.exports = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    const payload = await clerk.verifyToken(token, {
+    const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY,
     });
 

@@ -52,6 +52,12 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/members/groups/list — must be before /:id to avoid conflict
+router.get('/groups/list', async (req, res) => {
+  const { rows } = await db.query('SELECT * FROM groups ORDER BY name');
+  res.json(rows);
+});
+
 // GET /api/members/:id
 router.get('/:id', async (req, res) => {
   const { rows } = await db.query(
@@ -119,10 +125,5 @@ router.delete('/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// GET /api/members/groups/list
-router.get('/groups/list', async (req, res) => {
-  const { rows } = await db.query('SELECT * FROM groups ORDER BY name');
-  res.json(rows);
-});
 
 module.exports = router;
