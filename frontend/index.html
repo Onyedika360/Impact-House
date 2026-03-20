@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Impact House Church — Communications</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-<script>window.ENV_API_URL = 'https://impact-house.onrender.com/api';</script>
+<script>
+  window.ENV_API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:4000/api'
+    : 'https://impact-house.onrender.com/api';
+</script>
 <script>window.CLERK_PUBLISHABLE_KEY = 'pk_test_aW50ZWdyYWwtZmlsbHktOTQuY2xlcmsuYWNjb3VudHMuZGV2JA';</script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -523,6 +527,7 @@
 <script>
 const API = window.ENV_API_URL || 'https://impact-house.onrender.com/api';
 let currentUser = null;
+let clerkInstance = null;
 let allGroups   = [];
 let memberPage  = 1, memberSearch = '', memberSearchTimer;
 let selectedSmsGroup = '', selectedEmailGroup = '', logChannel = '';
@@ -549,6 +554,7 @@ window.addEventListener('load', async () => {
 });
 
 async function bootApp(clerk) {
+  clerkInstance = clerk;
   currentUser = clerk.user;
 
   // Verify this user is an authorized admin before showing the app
@@ -590,7 +596,7 @@ async function bootApp(clerk) {
 }
 
 async function doLogout() {
-  await window.Clerk.signOut();
+  await clerkInstance?.signOut();
   window.location.reload();
 }
 
@@ -598,7 +604,7 @@ async function doLogout() {
 const req = async (method, path, body) => {
   let token;
   try {
-    token = await window.Clerk.session?.getToken();
+    token = await clerkInstance?.session?.getToken();
   } catch(e) {
     console.error('Token error:', e);
   }
@@ -608,7 +614,7 @@ const req = async (method, path, body) => {
     body: body ? JSON.stringify(body) : undefined
   });
   if (res.status === 401) {
-    await window.Clerk.signOut();
+    await clerkInstance?.signOut();
     window.location.reload();
     return;
   }
