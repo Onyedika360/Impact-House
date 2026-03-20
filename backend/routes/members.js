@@ -82,6 +82,10 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
+    if (err.code === '23505') {
+      const field = err.constraint?.includes('email') ? 'email address' : 'phone number';
+      return res.status(409).json({ error: `A member with this ${field} already exists.` });
+    }
     console.error(err);
     res.status(500).json({ error: 'Failed to create member.' });
   }
@@ -113,6 +117,10 @@ router.patch('/:id', async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Member not found.' });
     res.json(rows[0]);
   } catch (err) {
+    if (err.code === '23505') {
+      const field = err.constraint?.includes('email') ? 'email address' : 'phone number';
+      return res.status(409).json({ error: `A member with this ${field} already exists.` });
+    }
     console.error(err);
     res.status(500).json({ error: 'Failed to update member.' });
   }
