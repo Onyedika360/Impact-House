@@ -8,6 +8,7 @@ const authRoutes    = require('./routes/auth');
 const memberRoutes  = require('./routes/members');
 const messageRoutes = require('./routes/messages');
 const statsRoutes   = require('./routes/stats');
+const { startScheduler } = require('./scheduler');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -48,4 +49,5 @@ app.use((err, req, res, _next) => { console.error(err.stack); res.status(500).js
 
 app.listen(PORT, () => {
   console.log(`\n🏛  Impact House House Church API — port ${PORT}\n`);
+  startScheduler();
 });

@@ -122,12 +122,12 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/messages/:id
+// DELETE /api/messages/:id — cancel draft or scheduled messages
 router.delete('/:id', async (req, res) => {
   const { rowCount } = await db.query(
-    `DELETE FROM messages WHERE id = $1 AND status = 'draft'`, [req.params.id]
+    `DELETE FROM messages WHERE id = $1 AND status IN ('draft', 'scheduled')`, [req.params.id]
   );
-  if (!rowCount) return res.status(404).json({ error: 'Draft not found.' });
+  if (!rowCount) return res.status(404).json({ error: 'Message not found or already sent.' });
   res.json({ success: true });
 });
 

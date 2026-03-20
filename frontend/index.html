@@ -161,6 +161,11 @@
   .schedule-opt.selected { border-color: var(--gold); background: var(--gold-light); color: var(--gold-dark); }
   .schedule-opt-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid currentColor; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
   .schedule-opt.selected .schedule-opt-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold-dark); }
+  .schedule-datetime { display: none; margin-top: 10px; }
+  .schedule-datetime.show { display: block; }
+  .schedule-datetime input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-family: var(--font-body); font-size: 13px; color: var(--black); background: var(--surface); outline: none; }
+  .schedule-datetime input:focus { border-color: var(--gold); background: var(--white); }
+  .schedule-datetime .schedule-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
 
   /* ── MEMBERS ── */
   .members-toolbar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; }
@@ -399,8 +404,12 @@
           <div class="compose-sidebar-panel">
             <div class="panel-section">
               <div class="panel-section-title">Schedule</div>
-              <button class="schedule-opt selected" onclick="selectSchedule(this)"><div class="schedule-opt-dot"></div>Send immediately</button>
-              <button class="schedule-opt" onclick="selectSchedule(this)"><div class="schedule-opt-dot"></div>Schedule for later</button>
+              <button class="schedule-opt selected" data-mode="now" onclick="selectSchedule(this,'sms')"><div class="schedule-opt-dot"></div>Send immediately</button>
+              <button class="schedule-opt" data-mode="later" onclick="selectSchedule(this,'sms')"><div class="schedule-opt-dot"></div>Schedule for later</button>
+              <div class="schedule-datetime" id="sms-datetime">
+                <input type="datetime-local" id="sms-scheduled-at"/>
+                <div class="schedule-hint">Minimum 30 minutes from now</div>
+              </div>
             </div>
             <div class="panel-section">
               <div class="panel-section-title">Summary</div>
@@ -440,8 +449,12 @@
           <div class="compose-sidebar-panel">
             <div class="panel-section">
               <div class="panel-section-title">Schedule</div>
-              <button class="schedule-opt selected" onclick="selectSchedule(this)"><div class="schedule-opt-dot"></div>Send immediately</button>
-              <button class="schedule-opt" onclick="selectSchedule(this)"><div class="schedule-opt-dot"></div>Schedule for later</button>
+              <button class="schedule-opt selected" data-mode="now" onclick="selectSchedule(this,'email')"><div class="schedule-opt-dot"></div>Send immediately</button>
+              <button class="schedule-opt" data-mode="later" onclick="selectSchedule(this,'email')"><div class="schedule-opt-dot"></div>Schedule for later</button>
+              <div class="schedule-datetime" id="email-datetime">
+                <input type="datetime-local" id="email-scheduled-at"/>
+                <div class="schedule-hint">Minimum 30 minutes from now</div>
+              </div>
             </div>
             <div class="panel-section">
               <div class="panel-section-title">Checklist</div>
@@ -856,16 +869,34 @@ async function quickSend(channel) {
 }
 
 async function sendBroadcast(channel) {
-  const groupId = channel === 'sms' ? selectedSmsGroup : selectedEmailGroup;
-  const body    = document.getElementById(channel + '-body').value.trim();
-  const subject = channel === 'email' ? document.getElementById('email-subject').value.trim() : null;
+  const groupId    = channel === 'sms' ? selectedSmsGroup : selectedEmailGroup;
+  const body       = document.getElementById(channel + '-body').value.trim();
+  const subject    = channel === 'email' ? document.getElementById('email-subject').value.trim() : null;
+  const isLater    = document.querySelector(`#screen-${channel} .schedule-opt[data-mode="later"]`)?.classList.contains('selected');
+  const scheduledAt = isLater ? document.getElementById(channel + '-scheduled-at').value : null;
+
   if (!body) { toast('Please write a message.', 'error'); return; }
   if (channel === 'email' && !subject) { toast('A subject line is required.', 'error'); return; }
+  if (isLater) {
+    if (!scheduledAt) { toast('Please select a scheduled time.', 'error'); return; }
+    const minTime = Date.now() + 30 * 60 * 1000;
+    if (new Date(scheduledAt).getTime() < minTime) { toast('Must be scheduled at least 30 minutes from now.', 'error'); return; }
+  }
+
   const btn = document.getElementById(channel + '-send-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sending...';
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ${isLater ? 'Scheduling...' : 'Sending...'}`;
   try {
-    const data = await post('/messages', { title: subject || 'SMS Broadcast', body, subject, channel, recipient_type: groupId ? 'group' : 'all', group_id: groupId || null, send_now: true });
-    toast(`Sent to ${data.total_sent || 0} members!`);
+    const data = await post('/messages', {
+      title: subject || 'SMS Broadcast', body, subject, channel,
+      recipient_type: groupId ? 'group' : 'all', group_id: groupId || null,
+      send_now: !isLater,
+      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+    });
+    if (isLater) {
+      toast('Message scheduled successfully!');
+    } else {
+      toast(`Sent to ${data.total_sent || 0} members!`);
+    }
     document.getElementById(channel + '-body').value = '';
     if (channel === 'email') document.getElementById('email-subject').value = '';
     navigate('log');
@@ -894,15 +925,31 @@ async function loadLog() {
     if (!data.messages.length) { document.getElementById('log-list').innerHTML = '<div class="empty-state"><p>No messages sent yet.</p></div>'; return; }
     document.getElementById('log-list').innerHTML = '<div class="log-list">' + data.messages.map(m => {
       const isSms = m.channel === 'sms';
+      const isScheduled = m.status === 'scheduled';
       const icon = isSms
         ? `<svg viewBox="0 0 16 16" fill="currentColor" style="color:#3a5e3a;width:18px;height:18px;"><path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>`
         : `<svg viewBox="0 0 16 16" fill="currentColor" style="color:#2a4a6e;width:18px;height:18px;"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 5l7 5 7-5" stroke="#2a4a6e" stroke-width="1" fill="none"/></svg>`;
-      const date = m.sent_at ? new Date(m.sent_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Draft';
+      const date = isScheduled && m.scheduled_at
+        ? 'Scheduled for ' + new Date(m.scheduled_at).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+        : m.sent_at ? new Date(m.sent_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Draft';
       const stat = isSms ? (m.total_delivered || m.total_sent || 0) : (m.total_opened || 0);
       const openRate = !isSms && m.total_sent ? ' · ' + Math.round(m.total_opened/m.total_sent*100) + '% open rate' : '';
-      return `<div class="log-card"><div class="log-type-icon ${isSms?'log-sms':'log-email'}">${icon}</div><div><div class="log-title">${m.title}</div><div class="log-meta">${m.channel.toUpperCase()} · ${m.group_name||'All Members'} · ${date}${openRate}</div></div><div class="log-stats"><div class="log-stat-big">${stat.toLocaleString()}</div><div class="log-stat-label">${isSms?'delivered':'opened'}</div></div></div>`;
+      const statusBadge = isScheduled ? `<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;background:#f0e6d0;color:#9e7c46;">Scheduled</span>` : '';
+      const cancelBtn = isScheduled
+        ? `<button onclick="cancelMessage(${m.id},'${m.title.replace(/'/g,"\\'")}') " style="margin-top:6px;padding:4px 10px;font-size:11px;border:1px solid #e5c6c6;border-radius:6px;background:#fdf0f0;color:#8b2222;cursor:pointer;font-family:var(--font-body);">Cancel</button>`
+        : '';
+      return `<div class="log-card"><div class="log-type-icon ${isSms?'log-sms':'log-email'}">${icon}</div><div><div class="log-title">${m.title}${statusBadge}</div><div class="log-meta">${m.channel.toUpperCase()} · ${m.group_name||'All Members'} · ${date}${openRate}</div>${cancelBtn}</div><div class="log-stats"><div class="log-stat-big">${stat.toLocaleString()}</div><div class="log-stat-label">${isSms?'delivered':'opened'}</div></div></div>`;
     }).join('') + '</div>';
   } catch(e) { document.getElementById('log-list').innerHTML = '<div class="empty-state"><p>Failed to load history.</p></div>'; }
+}
+
+async function cancelMessage(id, title) {
+  if (!confirm(`Cancel "${title}"? This cannot be undone.`)) return;
+  try {
+    await del('/messages/' + id);
+    toast('Scheduled message cancelled.');
+    loadLog();
+  } catch(e) { toast(e.message || 'Failed to cancel.', 'error'); }
 }
 
 function filterLog(btn, channel) {
@@ -925,9 +972,21 @@ function updateChar(textarea, countId, fillId, max) {
   const f = document.getElementById(fillId);  if (f) f.style.width = Math.min(len/max*100,100) + '%';
 }
 
-function selectSchedule(btn) {
+function selectSchedule(btn, channel) {
   btn.closest('.panel-section').querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
   btn.classList.add('selected');
+  const picker = document.getElementById(channel + '-datetime');
+  const isLater = btn.dataset.mode === 'later';
+  picker.classList.toggle('show', isLater);
+  if (isLater) {
+    // Set minimum to 30 minutes from now
+    const min = new Date(Date.now() + 30 * 60 * 1000);
+    const pad = n => String(n).padStart(2, '0');
+    const minStr = `${min.getFullYear()}-${pad(min.getMonth()+1)}-${pad(min.getDate())}T${pad(min.getHours())}:${pad(min.getMinutes())}`;
+    const input = document.getElementById(channel + '-scheduled-at');
+    input.min = minStr;
+    if (!input.value) input.value = minStr;
+  }
 }
 
 updateEmailChecklist();
