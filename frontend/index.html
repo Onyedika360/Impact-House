@@ -42,10 +42,10 @@
   #clerk-signin-overlay.show { display: flex; }
   .signin-brand { text-align: center; margin-bottom: 8px; }
   .signin-icon {
-    width: 52px; height: 52px; background: var(--gold); border-radius: 13px;
-    display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;
+    width: 72px; height: 72px; border-radius: 18px; overflow: hidden;
+    margin: 0 auto 14px;
   }
-  .signin-icon svg { width: 28px; height: 28px; fill: var(--black); }
+  .signin-icon img { width: 100%; height: 100%; object-fit: cover; }
   .signin-brand h1 { font-family: var(--font-display); font-size: 24px; font-weight: 600; color: #f5f2ed; }
   .signin-brand p { font-size: 13px; color: #666; margin-top: 4px; }
   #clerk-signin-mount { width: 100%; max-width: 400px; }
@@ -57,10 +57,10 @@
     width: 240px; flex-shrink: 0; background: var(--black);
     display: flex; flex-direction: column; height: 100vh;
   }
-  .sidebar-brand { padding: 28px 22px 24px; border-bottom: 1px solid #2a2927; }
+  .sidebar-brand { padding: 24px 22px 20px; border-bottom: 1px solid #2a2927; }
   .brand-mark { display: flex; align-items: center; gap: 12px; }
-  .brand-icon { width: 38px; height: 38px; background: var(--gold); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .brand-icon svg { width: 20px; height: 20px; fill: var(--black); }
+  .brand-icon { width: 52px; height: 52px; flex-shrink: 0; }
+  .brand-icon img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: screen; }
   .brand-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: #f5f2ed; display: block; line-height: 1.2; }
   .brand-sub { font-size: 10.5px; color: #666; letter-spacing: 0.06em; text-transform: uppercase; }
   .sidebar-nav { flex: 1; padding: 18px 0; overflow-y: auto; }
@@ -85,7 +85,8 @@
   .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
   .topbar { background: var(--white); border-bottom: 1px solid var(--border-light); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
   .topbar-left { display: flex; align-items: baseline; gap: 10px; }
-  .page-title { font-family: var(--font-display); font-size: 21px; font-weight: 500; }
+  .page-title { font-family: var(--font-display); font-size: 21px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  @media (max-width: 768px) { .page-title { font-size: 17px; max-width: 160px; } }
   .page-subtitle { font-size: 12px; color: var(--muted); }
   .topbar-right { display: flex; gap: 10px; align-items: center; }
   .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 8px; font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
@@ -232,6 +233,85 @@
   .empty-state { text-align: center; padding: 48px 32px; color: var(--muted); font-size: 13px; }
   ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── MOBILE ── */
+  .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 6px; color: var(--mid); }
+  .hamburger svg { width: 20px; height: 20px; display: block; }
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+  .sidebar-overlay.show { display: block; }
+  .btn-label-short { display: none; }
+  .btn-label-full { display: inline; }
+
+  @media (max-width: 768px) {
+    .hamburger { display: block; }
+    .page-subtitle { display: none; }
+    .topbar { padding: 0 16px; }
+    .page-content { padding: 20px 16px; }
+
+    /* Sidebar becomes a slide-out drawer */
+    .sidebar {
+      position: fixed; left: -260px; top: 0; z-index: 100;
+      transition: left 0.25s ease; height: 100vh;
+    }
+    .sidebar.open { left: 0; }
+
+    /* Stats: 2 columns */
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .stat-value { font-size: 26px; }
+
+    /* Dashboard: single column */
+    .dash-grid { grid-template-columns: 1fr; }
+
+    /* Compose: single column */
+    .compose-layout { grid-template-columns: 1fr; }
+    .compose-sidebar-panel { position: static; }
+
+    /* Members table: hide email, group, notify columns */
+    .table-head { grid-template-columns: 1fr 1fr 80px; }
+    .table-row { grid-template-columns: 1fr 1fr 80px; }
+    .table-cell:nth-child(2),
+    .table-cell:nth-child(4),
+    .table-cell:nth-child(5) { display: none; }
+    .table-head div:nth-child(2),
+    .table-head div:nth-child(4),
+    .table-head div:nth-child(5) { display: none; }
+
+    /* Members toolbar: stack */
+    .members-toolbar { flex-wrap: wrap; }
+    .members-toolbar .btn { flex: 1; justify-content: center; }
+
+    /* Modal — slides up from bottom on mobile */
+    .modal-overlay { align-items: flex-end; }
+    .modal {
+      width: 100vw; max-width: 100vw; border-radius: 18px 18px 0 0;
+      max-height: 92vh; display: flex; flex-direction: column;
+    }
+    .modal-body {
+      padding: 18px 20px; overflow-y: auto; flex: 1;
+    }
+    .modal-header { padding: 18px 20px 14px; flex-shrink: 0; }
+    .modal-footer { padding: 12px 20px 20px; flex-shrink: 0; }
+    .modal-footer .btn { flex: 1; justify-content: center; padding: 12px; }
+    .form-row { grid-template-columns: 1fr; }
+    .notify-opt { padding: 12px 8px; font-size: 13px; }
+
+    /* Log cards */
+    .log-card { padding: 14px 16px; gap: 12px; }
+
+    /* Toast */
+    #toast { left: 16px; right: 16px; bottom: 16px; max-width: unset; }
+
+    /* Topbar buttons — icon + short label */
+    .topbar-right { gap: 8px; }
+    .topbar-right .btn { padding: 8px 12px; font-size: 12px; }
+    .btn-label-full { display: none; }
+    .btn-label-short { display: inline; }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .stat-card { padding: 14px 16px; }
+  }
 </style>
 </head>
 <body>
@@ -246,7 +326,7 @@
 <div id="clerk-signin-overlay">
   <div class="signin-brand">
     <div class="signin-icon">
-      <svg viewBox="0 0 20 20"><path d="M10 2L9 6H4.5l3.7 2.7-1.4 4.3L10 10.6l3.2 2.4-1.4-4.3L15.5 6H11L10 2z"/></svg>
+      <img src="logo.png" alt="Impact House Church"/>
     </div>
     <h1>Impact House Church</h1>
     <p>Sign in to the Communications Portal</p>
@@ -259,7 +339,7 @@
   <aside class="sidebar">
     <div class="sidebar-brand">
       <div class="brand-mark">
-        <div class="brand-icon"><svg viewBox="0 0 20 20"><path d="M10 2L9 6H4.5l3.7 2.7-1.4 4.3L10 10.6l3.2 2.4-1.4-4.3L15.5 6H11L10 2z"/></svg></div>
+        <div class="brand-icon"><img src="logo.png" alt="Impact House Church"/></div>
         <div><span class="brand-name">Impact House Church</span><span class="brand-sub">Communications</span></div>
       </div>
     </div>
@@ -305,17 +385,28 @@
   </aside>
 
   <div class="main">
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
     <header class="topbar">
       <div class="topbar-left">
+        <button class="hamburger" onclick="openSidebar()">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M3 5h14M3 10h14M3 15h14"/>
+          </svg>
+        </button>
         <span class="page-title" id="topbar-title">Dashboard</span>
         <span class="page-subtitle" id="topbar-sub"></span>
       </div>
       <div class="topbar-right">
-        <button class="btn btn-ghost" onclick="openModal('add')">
+        <button id="topbar-add-member" class="btn btn-ghost" onclick="openModal('add')">
           <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1v12M1 7h12"/></svg>
-          Add Member
+          <span class="btn-label-full">Add Member</span>
+          <span class="btn-label-short">Add</span>
         </button>
-        <button class="btn btn-gold" onclick="navigate('sms')">New Broadcast</button>
+        <button class="btn btn-gold" onclick="navigate('sms')">
+          <svg viewBox="0 0 14 14" fill="currentColor"><path d="M1 7l11-5-5 11-2-4-4-2z"/></svg>
+          <span class="btn-label-full">New Broadcast</span>
+          <span class="btn-label-short">Broadcast</span>
+        </button>
       </div>
     </header>
 
@@ -667,11 +758,25 @@ function navigate(id) {
   const [title, sub] = pageMeta[id];
   document.getElementById('topbar-title').textContent = title;
   document.getElementById('topbar-sub').textContent = sub;
+  // Hide global Add Member button on Members screen (has its own)
+  document.getElementById('topbar-add-member').style.display = id === 'members' ? 'none' : '';
   if (id === 'members') loadMembers();
   if (id === 'log') loadLog();
   if (id === 'sms' || id === 'email') renderGroupPills(id);
 }
-document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => navigate(item.dataset.screen)));
+document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => {
+  navigate(item.dataset.screen);
+  closeSidebar();
+}));
+
+function openSidebar() {
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('show');
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
 
 // ── GROUPS ───────────────────────────────────────────────
 async function loadGroups() {
