@@ -16,6 +16,7 @@ module.exports = async (req, res, next) => {
 
     const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY,
+      clockSkewInMs: 60000, // allow 60s clock difference
     });
 
     // Access control — only allow listed user IDs

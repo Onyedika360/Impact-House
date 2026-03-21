@@ -620,6 +620,34 @@
   </div>
 </div>
 
+<!-- MESSAGE PREVIEW MODAL -->
+<div class="modal-overlay" id="message-preview-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <span class="modal-title" id="preview-title">Message</span>
+      <button class="modal-close" onclick="closePreviewModal()">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;color:var(--text-muted);">
+        <span id="preview-channel"></span>
+        <span id="preview-date"></span>
+        <span id="preview-recipients"></span>
+      </div>
+      <div id="preview-subject-row" style="display:none;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px;">Subject</div>
+        <div id="preview-subject" style="font-size:14px;font-weight:500;"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:8px;">Message Body</div>
+        <div id="preview-body" style="font-size:14px;line-height:1.7;white-space:pre-wrap;background:var(--bg);border:1px solid var(--border-light);border-radius:8px;padding:16px;max-height:320px;overflow-y:auto;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closePreviewModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- Clerk JS SDK -->
@@ -635,6 +663,7 @@ let clerkInstance = null;
 let allGroups   = [];
 let memberPage  = 1, memberSearch = '', memberSearchTimer;
 let selectedSmsGroup = '', selectedEmailGroup = '', logChannel = '';
+const logMessages = {};
 
 // ── CLERK INIT ───────────────────────────────────────────
 window.addEventListener('load', async () => {
@@ -900,7 +929,27 @@ function renderMembersTable(members, total) {
     ? Array.from({length: pages}, (_,i) => `<button class="btn ${i+1===memberPage?'btn-dark':'btn-ghost'}" style="padding:6px 12px;" onclick="loadMembers(${i+1})">${i+1}</button>`).join('') : '';
 }
 
-function exportMembers() { toast('CSV export — coming soon!', 'error'); }
+async function exportMembers() {
+  try {
+    const data = await get('/members?limit=1000&status=all');
+    const members = data.members;
+    if (!members.length) { toast('No members to export.', 'error'); return; }
+    const headers = ['First Name','Last Name','Email','Phone','Group','Status','Notify SMS','Notify Email','Notes'];
+    const rows = members.map(m => [
+      m.first_name, m.last_name, m.email||'', m.phone||'',
+      m.group_name||'General', m.status,
+      m.notify_sms ? 'Yes' : 'No', m.notify_email ? 'Yes' : 'No',
+      (m.notes||'').replace(/\n/g,' ')
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'impact-house-members.csv'; a.click();
+    URL.revokeObjectURL(url);
+    toast(`Exported ${members.length} members!`);
+  } catch(e) { toast('Failed to export.', 'error'); }
+}
 
 // ── MEMBER MODAL ─────────────────────────────────────────
 function openModal(mode, member) {
@@ -1028,6 +1077,7 @@ async function loadLog() {
   try {
     const data = await get('/messages' + (logChannel ? '?channel=' + logChannel : ''));
     if (!data.messages.length) { document.getElementById('log-list').innerHTML = '<div class="empty-state"><p>No messages sent yet.</p></div>'; return; }
+    data.messages.forEach(m => { logMessages[m.id] = m; });
     document.getElementById('log-list').innerHTML = '<div class="log-list">' + data.messages.map(m => {
       const isSms = m.channel === 'sms';
       const isScheduled = m.status === 'scheduled';
@@ -1041,9 +1091,10 @@ async function loadLog() {
       const openRate = !isSms && m.total_sent ? ' · ' + Math.round(m.total_opened/m.total_sent*100) + '% open rate' : '';
       const statusBadge = isScheduled ? `<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;background:#f0e6d0;color:#9e7c46;">Scheduled</span>` : '';
       const cancelBtn = isScheduled
-        ? `<button onclick="cancelMessage(${m.id},'${m.title.replace(/'/g,"\\'")}') " style="margin-top:6px;padding:4px 10px;font-size:11px;border:1px solid #e5c6c6;border-radius:6px;background:#fdf0f0;color:#8b2222;cursor:pointer;font-family:var(--font-body);">Cancel</button>`
+        ? `<button onclick="event.stopPropagation();cancelMessage(${m.id},'${m.title.replace(/'/g,"\\'")}') " style="margin-top:6px;padding:4px 10px;font-size:11px;border:1px solid #e5c6c6;border-radius:6px;background:#fdf0f0;color:#8b2222;cursor:pointer;font-family:var(--font-body);">Cancel</button>`
         : '';
-      return `<div class="log-card"><div class="log-type-icon ${isSms?'log-sms':'log-email'}">${icon}</div><div><div class="log-title">${m.title}${statusBadge}</div><div class="log-meta">${m.channel.toUpperCase()} · ${m.group_name||'All Members'} · ${date}${openRate}</div>${cancelBtn}</div><div class="log-stats"><div class="log-stat-big">${stat.toLocaleString()}</div><div class="log-stat-label">${isSms?'delivered':'opened'}</div></div></div>`;
+      const previewSnippet = m.body ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px;">${m.body.replace(/</g,'&lt;').substring(0,120)}${m.body.length>120?'…':''}</div>` : '';
+      return `<div class="log-card" style="cursor:pointer;" onclick="openMessagePreview(logMessages[${m.id}])"><div class="log-type-icon ${isSms?'log-sms':'log-email'}">${icon}</div><div style="min-width:0;flex:1;"><div class="log-title">${m.title}${statusBadge}</div><div class="log-meta">${m.channel.toUpperCase()} · ${m.group_name||'All Members'} · ${date}${openRate}</div>${previewSnippet}${cancelBtn}</div><div class="log-stats"><div class="log-stat-big">${stat.toLocaleString()}</div><div class="log-stat-label">${isSms?'delivered':'opened'}</div></div></div>`;
     }).join('') + '</div>';
   } catch(e) { document.getElementById('log-list').innerHTML = '<div class="empty-state"><p>Failed to load history.</p></div>'; }
 }
@@ -1056,6 +1107,29 @@ async function cancelMessage(id, title) {
     loadLog();
   } catch(e) { toast(e.message || 'Failed to cancel.', 'error'); }
 }
+
+function openMessagePreview(m) {
+  if (!m) return;
+  document.getElementById('preview-title').textContent = m.title;
+  document.getElementById('preview-channel').textContent = m.channel.toUpperCase();
+  document.getElementById('preview-recipients').textContent = m.group_name || 'All Members';
+  const isScheduled = m.status === 'scheduled';
+  const dateStr = isScheduled && m.scheduled_at
+    ? 'Scheduled: ' + new Date(m.scheduled_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    : m.sent_at ? 'Sent: ' + new Date(m.sent_at).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Draft';
+  document.getElementById('preview-date').textContent = dateStr;
+  const subjectRow = document.getElementById('preview-subject-row');
+  if (m.subject) {
+    subjectRow.style.display = 'block';
+    document.getElementById('preview-subject').textContent = m.subject;
+  } else {
+    subjectRow.style.display = 'none';
+  }
+  document.getElementById('preview-body').textContent = m.body || '';
+  document.getElementById('message-preview-modal').classList.add('open');
+}
+function closePreviewModal() { document.getElementById('message-preview-modal').classList.remove('open'); }
+document.getElementById('message-preview-modal').addEventListener('click', e => { if (e.target.id === 'message-preview-modal') closePreviewModal(); });
 
 function filterLog(btn, channel) {
   document.querySelectorAll('.log-filter-tab').forEach(b => b.classList.remove('active'));
