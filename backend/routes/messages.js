@@ -65,7 +65,7 @@ router.post('/', async (req, res) => {
     if (send_now) {
       let memberQuery = 'SELECT * FROM members WHERE status = $1';
       const qParams   = ['active'];
-      if (recipient_type === 'group' && group_id) { memberQuery += ' AND group_id = $2'; qParams.push(group_id); }
+      if (recipient_type === 'group' && group_id) { memberQuery += ' AND id IN (SELECT member_id FROM member_tags WHERE group_id = $2)'; qParams.push(group_id); }
 
       const { rows: members } = await db.query(memberQuery, qParams);
       const channels = channel === 'both' ? ['sms','email'] : [channel];

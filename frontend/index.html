@@ -48,7 +48,13 @@
   .signin-icon img { width: 100%; height: 100%; object-fit: cover; }
   .signin-brand h1 { font-family: var(--font-display); font-size: 24px; font-weight: 600; color: #f5f2ed; }
   .signin-brand p { font-size: 13px; color: #666; margin-top: 4px; }
-  #clerk-signin-mount { width: 100%; max-width: 400px; }
+  #clerk-signin-mount { width: 100%; max-width: 400px; padding: 0 16px; box-sizing: border-box; }
+  @media (max-width: 480px) {
+    #clerk-signin-overlay { padding: 24px 0; justify-content: flex-start; overflow-y: auto; }
+    #clerk-signin-mount { max-width: 100%; }
+    .signin-brand h1 { font-size: 20px; }
+    .signin-icon { width: 60px; height: 60px; }
+  }
 
   /* ── APP SHELL ── */
   #app { display: none; height: 100vh; overflow: hidden; }
@@ -229,6 +235,19 @@
   .notify-opt { flex: 1; padding: 9px; border-radius: 8px; border: 1px solid var(--border); text-align: center; cursor: pointer; font-size: 12.5px; color: var(--mid); transition: all 0.15s; font-family: var(--font-body); background: var(--white); }
   .notify-opt:hover { border-color: var(--gold); }
   .notify-opt.selected { background: var(--black); color: #f5f2ed; border-color: var(--black); }
+  .tag-options { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag-opt { padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); cursor: pointer; font-size: 12.5px; color: var(--mid); transition: all 0.15s; font-family: var(--font-body); background: var(--white); white-space: nowrap; }
+  .tag-opt:hover { border-color: var(--gold); }
+  .tag-opt.selected { background: var(--black); color: #f5f2ed; border-color: var(--black); }
+  .tag-opt.custom-tag { border-style: dashed; }
+  .tag-opt.custom-tag.selected { background: #2a4060; border-color: #2a4060; border-style: solid; }
+  .tag-divider { width: 100%; border: none; border-top: 1px dashed var(--border); margin: 4px 0; }
+  .tag-new-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+  .tag-new-input { border: 1px dashed var(--border); border-radius: 20px; padding: 6px 12px; font-size: 12.5px; font-family: var(--font-body); background: var(--white); outline: none; flex: 1; }
+  .tag-new-input:focus { border-color: var(--gold); border-style: solid; }
+  .member-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .member-tag { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; background: #ede9e3; color: #5a5450; white-space: nowrap; }
+  .member-tag.custom { background: #e4ecf0; color: #3f5e6e; }
   .modal-footer { padding: 16px 28px 22px; display: flex; gap: 10px; justify-content: flex-end; }
   .empty-state { text-align: center; padding: 48px 32px; color: var(--muted); font-size: 13px; }
   ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; }
@@ -593,14 +612,16 @@
       </div>
       <div class="form-group"><label class="form-label">Email Address</label><input class="form-field" type="email" id="m-email" placeholder="member@email.com"/></div>
       <div class="form-group"><label class="form-label">Phone Number</label><input class="form-field" type="tel" id="m-phone" placeholder="(832) 555-0000"/></div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Group</label>
-          <select class="form-field" id="m-group"><option value="">General</option></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Status</label>
-          <select class="form-field" id="m-status"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-field" id="m-status"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags</label>
+        <div class="tag-options" id="m-tags"></div>
+        <div class="tag-new-row">
+          <input class="tag-new-input" id="m-new-tag" placeholder="+ New custom tag" onkeydown="if(event.key==='Enter'){event.preventDefault();createCustomTag();}"/>
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;" onclick="createCustomTag()">Add</button>
         </div>
       </div>
       <div class="form-group">
@@ -811,12 +832,79 @@ function closeSidebar() {
 async function loadGroups() {
   try {
     allGroups = await get('/members/groups/list');
-    ['q-sms-group','q-email-group','m-group'].forEach(id => {
+    ['q-sms-group','q-email-group'].forEach(id => {
       const el = document.getElementById(id); if (!el) return;
       el.innerHTML = '<option value="">All Members</option>';
       allGroups.forEach(g => { const o = document.createElement('option'); o.value = g.id; o.textContent = g.name; el.appendChild(o); });
     });
   } catch(e) { console.error('Groups:', e); }
+}
+
+function renderModalTags(selectedIds = []) {
+  const container = document.getElementById('m-tags');
+  container.innerHTML = '';
+  const primary = allGroups.filter(g => g.type === 'primary');
+  const custom  = allGroups.filter(g => g.type === 'custom');
+  primary.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className = 'tag-opt' + (selectedIds.includes(g.id) ? ' selected' : '');
+    btn.textContent = g.name;
+    btn.dataset.id = g.id;
+    btn.onclick = () => btn.classList.toggle('selected');
+    container.appendChild(btn);
+  });
+  if (custom.length) {
+    const hr = document.createElement('hr');
+    hr.className = 'tag-divider';
+    container.appendChild(hr);
+    custom.forEach(g => {
+      const wrap = document.createElement('span');
+      wrap.style.position = 'relative'; wrap.style.display = 'inline-flex'; wrap.style.alignItems = 'center';
+      const btn = document.createElement('button');
+      btn.className = 'tag-opt custom-tag' + (selectedIds.includes(g.id) ? ' selected' : '');
+      btn.textContent = g.name;
+      btn.dataset.id = g.id;
+      btn.onclick = () => btn.classList.toggle('selected');
+      const del = document.createElement('button');
+      del.innerHTML = '&times;';
+      del.title = 'Delete tag';
+      del.style.cssText = 'position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;color:#888;';
+      del.onclick = (e) => { e.stopPropagation(); deleteCustomTag(g.id, g.name); };
+      wrap.appendChild(btn); wrap.appendChild(del);
+      container.appendChild(wrap);
+    });
+  }
+}
+
+async function createCustomTag() {
+  const input = document.getElementById('m-new-tag');
+  const name = input.value.trim();
+  if (!name) return;
+  try {
+    const tag = await post('/members/groups', { name });
+    allGroups.push(tag);
+    input.value = '';
+    const selectedIds = getSelectedTagIds();
+    renderModalTags([...selectedIds, tag.id]);
+    renderGroupPills('sms'); renderGroupPills('email');
+  } catch(e) { toast(e.message || 'Failed to create tag.', 'error'); }
+}
+
+async function deleteCustomTag(id, name) {
+  if (!confirm(`Delete tag "${name}"? It will be removed from all members.`)) return;
+  try {
+    await del('/members/groups/' + id);
+    allGroups = allGroups.filter(g => g.id !== id);
+    const selectedIds = getSelectedTagIds().filter(i => i !== id);
+    renderModalTags(selectedIds);
+    renderGroupPills('sms'); renderGroupPills('email');
+    toast(`Tag "${name}" deleted.`);
+  } catch(e) { toast(e.message || 'Failed to delete tag.', 'error'); }
+}
+
+function getSelectedTagIds() {
+  return Array.from(document.querySelectorAll('#m-tags .tag-opt.selected'))
+    .map(btn => parseInt(btn.dataset.id));
 }
 
 function renderGroupPills(channel) {
@@ -916,7 +1004,7 @@ function renderMembersTable(members, total) {
       </div>
       <div class="table-cell">${m.email||'—'}</div>
       <div class="table-cell">${m.phone||'—'}</div>
-      <div class="table-cell">${m.group_name||'General'}</div>
+      <div class="table-cell"><div class="member-tags">${(m.tags||[]).length ? m.tags.map(t=>`<span class="member-tag${t.type==='custom'?' custom':''}">${t.name}</span>`).join('') : '<span class="member-tag">General Members</span>'}</div></div>
       <div>${badge}</div>
       <div class="row-actions">
         <button class="icon-btn" title="Edit" onclick='openModal("edit",${mj})'><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 10L10 1l3 3-9 9H1v-3z"/></svg></button>
@@ -934,10 +1022,10 @@ async function exportMembers() {
     const data = await get('/members?limit=1000&status=all');
     const members = data.members;
     if (!members.length) { toast('No members to export.', 'error'); return; }
-    const headers = ['First Name','Last Name','Email','Phone','Group','Status','Notify SMS','Notify Email','Notes'];
+    const headers = ['First Name','Last Name','Email','Phone','Tags','Status','Notify SMS','Notify Email','Notes'];
     const rows = members.map(m => [
       m.first_name, m.last_name, m.email||'', m.phone||'',
-      m.group_name||'General', m.status,
+      (m.tags||[]).map(t=>t.name).join('; ') || 'General Members', m.status,
       m.notify_sms ? 'Yes' : 'No', m.notify_email ? 'Yes' : 'No',
       (m.notes||'').replace(/\n/g,' ')
     ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
@@ -961,10 +1049,8 @@ function openModal(mode, member) {
   document.getElementById('m-email').value  = member?.email || '';
   document.getElementById('m-phone').value  = member?.phone || '';
   document.getElementById('m-status').value = member?.status || 'active';
-  const gSelect = document.getElementById('m-group');
-  gSelect.innerHTML = '<option value="">General</option>';
-  allGroups.forEach(g => { const o = document.createElement('option'); o.value = g.id; o.textContent = g.name; gSelect.appendChild(o); });
-  if (member?.group_id) gSelect.value = member.group_id;
+  const selectedTagIds = (member?.tags || []).map(t => t.id);
+  renderModalTags(selectedTagIds);
   document.querySelectorAll('.notify-opt').forEach(btn => {
     btn.classList.remove('selected');
     if (member) { if (btn.dataset.sms === String(member.notify_sms) && btn.dataset.email === String(member.notify_email)) btn.classList.add('selected'); }
@@ -984,7 +1070,7 @@ async function saveMember() {
     last_name:  document.getElementById('m-last').value.trim(),
     email:      document.getElementById('m-email').value.trim() || null,
     phone:      document.getElementById('m-phone').value.trim() || null,
-    group_id:   document.getElementById('m-group').value || null,
+    group_ids:  getSelectedTagIds(),
     status:     document.getElementById('m-status').value,
     notify_sms:   notifyBtn?.dataset.sms   === 'true',
     notify_email: notifyBtn?.dataset.email === 'true',
