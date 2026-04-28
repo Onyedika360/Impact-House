@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const db     = require('../db');
 const auth   = require('../middleware/auth');
+const { sendEmailBatch } = require('../services/email');
 
 router.use(auth);
 
@@ -80,6 +81,9 @@ router.post('/', async (req, res) => {
             `INSERT INTO message_deliveries (message_id, member_id, channel) VALUES ${vals} ON CONFLICT DO NOTHING`,
             params
           );
+
+          if (ch === 'email') await sendEmailBatch(db, message, eligible);
+          // TODO: add Twilio SMS here when account is verified
         }
       }
 
@@ -92,8 +96,6 @@ router.post('/', async (req, res) => {
       );
       message.status     = 'sent';
       message.total_sent = parseInt(dc[0].count);
-
-      // TODO: integrate Twilio (SMS) and SendGrid (Email) here
     }
 
     res.status(201).json(message);

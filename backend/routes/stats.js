@@ -7,7 +7,7 @@ router.use(auth);
 // GET /api/stats  — dashboard numbers
 router.get('/', async (req, res) => {
   try {
-    const [members, sms, emails, openRate, recentActivity] = await Promise.all([
+    const [members, sms, emails, openRate, failRate, recentActivity] = await Promise.all([
 
       // Total active members
       db.query(`SELECT COUNT(*) FROM members WHERE status = 'active'`),
@@ -24,6 +24,14 @@ router.get('/', async (req, res) => {
                THEN ROUND(SUM(total_opened)::numeric / SUM(total_sent) * 100, 1)
                ELSE 0 END AS rate
         FROM messages WHERE channel IN ('email','both') AND status = 'sent'
+      `),
+
+      // Email fail rate from delivery records
+      db.query(`
+        SELECT CASE WHEN COUNT(*) > 0
+               THEN ROUND(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END)::numeric / COUNT(*) * 100, 1)
+               ELSE 0 END AS rate
+        FROM message_deliveries WHERE channel = 'email'
       `),
 
       // Recent activity feed (last 10 events)
@@ -52,6 +60,7 @@ router.get('/', async (req, res) => {
       total_sms_sent:   parseInt(sms.rows[0].count),
       total_emails_sent: parseInt(emails.rows[0].count),
       avg_open_rate:    parseFloat(openRate.rows[0].rate),
+      email_fail_rate:  parseFloat(failRate.rows[0].rate),
       recent_activity:  recentActivity.rows,
     });
   } catch (err) {

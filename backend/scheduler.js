@@ -1,4 +1,5 @@
 const db = require('./db');
+const { sendEmailBatch } = require('./services/email');
 
 // Runs every 60 seconds — finds scheduled messages due to send and processes them
 function startScheduler() {
@@ -19,7 +20,7 @@ function startScheduler() {
           let memberQuery = `SELECT * FROM members WHERE status = 'active'`;
           const qParams   = [];
           if (message.recipient_type === 'group' && message.group_id) {
-            memberQuery += ` AND group_id = $1`;
+            memberQuery += ` AND id IN (SELECT member_id FROM member_tags WHERE group_id = $1)`;
             qParams.push(message.group_id);
           }
           const { rows: members } = await db.query(memberQuery, qParams);
@@ -35,10 +36,11 @@ function startScheduler() {
                 `INSERT INTO message_deliveries (message_id, member_id, channel) VALUES ${vals} ON CONFLICT DO NOTHING`,
                 params
               );
+
+              if (ch === 'email') await sendEmailBatch(db, message, eligible);
+              // TODO: add Twilio SMS here when account is verified
             }
           }
-
-          // TODO: Trigger Twilio/SendGrid here when ready
 
           const { rows: dc } = await db.query(
             `SELECT COUNT(*) FROM message_deliveries WHERE message_id = $1`, [message.id]

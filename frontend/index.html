@@ -945,7 +945,7 @@ async function loadDashboard() {
       <div class="stat-card"><div class="stat-label">Total Members</div><div class="stat-value">${data.total_members.toLocaleString()}</div><div class="stat-delta">&#8593; ${data.new_this_month} this month</div></div>
       <div class="stat-card"><div class="stat-label">SMS Sent</div><div class="stat-value">${data.total_sms_sent.toLocaleString()}</div><div class="stat-delta">All time</div></div>
       <div class="stat-card"><div class="stat-label">Newsletters</div><div class="stat-value">${data.total_emails_sent.toLocaleString()}</div><div class="stat-delta">Total delivered</div></div>
-      <div class="stat-card"><div class="stat-label">Avg Open Rate</div><div class="stat-value">${data.avg_open_rate}%</div><div class="stat-delta">Email newsletters</div></div>`;
+      <div class="stat-card"><div class="stat-label">Email Fail Rate</div><div class="stat-value" style="color:${data.email_fail_rate > 10 ? 'var(--danger, #c0392b)' : 'inherit'}">${data.email_fail_rate}%</div><div class="stat-delta">Across all email deliveries</div></div>`;
     const name = [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') || 'Pastor';
     document.getElementById('topbar-sub').textContent = `Welcome back, ${name}`;
     pageMeta.members[1] = `${data.total_members.toLocaleString()} registered members`;
