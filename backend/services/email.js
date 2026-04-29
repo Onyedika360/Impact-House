@@ -7,19 +7,41 @@ const FROM = {
   name:  process.env.SENDGRID_FROM_NAME,
 };
 
+const TOKEN_FIRST = /\{\{\s*first_name\s*\}\}/g;
+const TOKEN_LAST  = /\{\{\s*last_name\s*\}\}/g;
+const HAS_HTML    = /<[a-z][\s\S]*>/i;
+
+const footerText = (token) =>
+  `\n\n—\nDon't want these emails? Unsubscribe: ${process.env.PUBLIC_URL}/api/public/unsubscribe?token=${token}`;
+
+const footerHtml = (token) =>
+  `<hr style="margin:24px 0;border:none;border-top:1px solid #e0e0e0"><p style="font-size:12px;color:#888;margin:0">Don't want these emails? <a href="${process.env.PUBLIC_URL}/api/public/unsubscribe?token=${token}" style="color:#888">Unsubscribe</a>.</p>`;
+
+function applyTokens(str, member) {
+  return str
+    .replace(TOKEN_FIRST, member.first_name || '')
+    .replace(TOKEN_LAST,  member.last_name  || '');
+}
+
+function buildHtml(body) {
+  return HAS_HTML.test(body) ? body : body.replace(/\n/g, '<br>');
+}
+
 // Sends emails to a list of members and updates delivery statuses in the DB.
 // members must already have delivery rows in message_deliveries.
 async function sendEmailBatch(db, message, members) {
   const results = await Promise.allSettled(
-    members.map(member =>
-      sgMail.send({
+    members.map(member => {
+      const subject = applyTokens(message.subject || '', member);
+      const body    = applyTokens(message.body,         member);
+      return sgMail.send({
         to:      member.email,
         from:    FROM,
-        subject: message.subject,
-        text:    message.body,
-        html:    message.body.replace(/\n/g, '<br>'),
-      })
-    )
+        subject,
+        text:    body + footerText(member.unsubscribe_token || ''),
+        html:    buildHtml(body) + footerHtml(member.unsubscribe_token || ''),
+      });
+    })
   );
 
   let sent = 0, failed = 0;
@@ -46,4 +68,16 @@ async function sendEmailBatch(db, message, members) {
   return { sent, failed };
 }
 
-module.exports = { sendEmailBatch };
+// Sends a one-off test email to a single address (no DB row needed).
+async function sendTestEmail({ to, subject, body }) {
+  const htmlBody = buildHtml(body);
+  await sgMail.send({
+    to,
+    from:    FROM,
+    subject: `[TEST] ${subject || '(no subject)'}`,
+    text:    body + '\n\n— This is a test send.',
+    html:    htmlBody + '<hr style="margin:24px 0;border:none;border-top:1px solid #e0e0e0"><p style="font-size:12px;color:#888;margin:0">This is a test send.</p>',
+  });
+}
+
+module.exports = { sendEmailBatch, sendTestEmail };

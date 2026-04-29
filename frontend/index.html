@@ -331,7 +331,34 @@
     .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .stat-card { padding: 14px 16px; }
   }
+
+  /* ── COMPOSE PANELS (drafts / templates) ── */
+  .compose-panels { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .compose-panel { border: 1px solid var(--border-light); border-radius: var(--radius); overflow: hidden; background: var(--white); }
+  .compose-panel-header { width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--warm-gray); border: none; cursor: pointer; font-family: var(--font-body); font-size: 12.5px; font-weight: 500; color: var(--mid); text-align: left; }
+  .compose-panel-header:hover { background: #ede9e3; }
+  .compose-panel-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 20px; background: var(--gold-light); color: var(--gold-dark); font-size: 10.5px; font-weight: 600; }
+  .compose-panel-chevron { width: 10px; height: 6px; margin-left: auto; transition: transform 0.2s; flex-shrink: 0; color: var(--muted); }
+  .compose-panel-header[aria-expanded="true"] .compose-panel-chevron { transform: rotate(180deg); }
+  .compose-panel-body { border-top: 1px solid var(--border-light); }
+  .compose-panel-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background 0.1s; }
+  .compose-panel-item:last-child { border-bottom: none; }
+  .compose-panel-item:hover { background: var(--warm-gray); }
+  .compose-panel-item-title { flex: 1; font-size: 12.5px; color: var(--charcoal); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .compose-panel-item-meta { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+  .compose-panel-item-del { width: 22px; height: 22px; border: 1px solid var(--border); border-radius: 5px; background: none; cursor: pointer; color: var(--muted); font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; }
+  .compose-panel-item-del:hover { background: #fdf0f0; color: var(--danger); border-color: #f5c6c6; }
+  .compose-panel-empty { padding: 12px 14px; font-size: 12px; color: var(--muted); }
+
+  /* ── PREVIEW TOGGLE ── */
+  .preview-toggle { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .preview-tab { padding: 4px 12px; font-size: 12px; font-family: var(--font-body); border: none; background: transparent; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+  .preview-tab.active { background: var(--black); color: #f5f2ed; }
+
+  /* ── RECIPIENT COUNT ── */
+  .recipient-count { font-size: 11.5px; color: var(--gold-dark); margin-top: 5px; min-height: 16px; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 </head>
 <body>
 
@@ -483,10 +510,26 @@
             <input class="search-input" id="member-search" placeholder="Search by name, phone or email..." oninput="searchMembers(this.value)"/>
           </div>
           <button class="btn btn-ghost" onclick="exportMembers()">Export CSV</button>
+          <button class="btn btn-ghost" onclick="openBulkUpload()">Bulk Upload</button>
           <button class="btn btn-dark" onclick="openModal('add')">+ Add Member</button>
         </div>
+        <div class="members-filters" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
+          <select class="form-field" id="filter-gender" style="width:auto;font-size:13px;padding:6px 10px;" onchange="setMemberFilter('gender',this.value)">
+            <option value="">All genders</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+          <select class="form-field" id="filter-notify" style="width:auto;font-size:13px;padding:6px 10px;" onchange="setMemberFilter('notify',this.value)">
+            <option value="">All notify</option>
+            <option value="email">Email</option>
+            <option value="sms">SMS</option>
+          </select>
+          <select class="form-field" id="filter-group" style="width:auto;font-size:13px;padding:6px 10px;" onchange="setMemberFilter('group',this.value)">
+            <option value="">All groups</option>
+          </select>
+        </div>
         <div class="members-table">
-          <div class="table-head"><div>Name</div><div>Email</div><div>Phone</div><div>Group</div><div>Notify</div><div></div></div>
+          <div class="table-head"><div>Name</div><div>Email</div><div>Phone</div><div>Gender</div><div>Group</div><div>Notify</div><div></div></div>
           <div id="members-list"><div class="loading-state"><div class="spinner"></div> Loading members...</div></div>
         </div>
         <div id="members-pagination" style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;"></div>
@@ -496,13 +539,30 @@
       <section class="screen" id="screen-sms">
         <div class="compose-layout">
           <div class="compose-main">
+            <div class="compose-panels">
+              <div class="compose-panel">
+                <button class="compose-panel-header" onclick="togglePanel(this,'sms-drafts-body')" aria-expanded="false">
+                  Drafts <span class="compose-panel-badge" id="sms-draft-badge" style="display:none"></span>
+                  <svg class="compose-panel-chevron" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+                </button>
+                <div class="compose-panel-body" id="sms-drafts-body" style="display:none"><div class="compose-panel-empty">No drafts saved.</div></div>
+              </div>
+              <div class="compose-panel">
+                <button class="compose-panel-header" onclick="togglePanel(this,'sms-templates-body')" aria-expanded="false">
+                  Templates <span class="compose-panel-badge" id="sms-template-badge" style="display:none"></span>
+                  <svg class="compose-panel-chevron" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+                </button>
+                <div class="compose-panel-body" id="sms-templates-body" style="display:none"><div class="compose-panel-empty">No templates saved.</div></div>
+              </div>
+            </div>
             <div class="field-group">
               <label class="field-label">Recipients</label>
               <div style="display:flex;gap:8px;flex-wrap:wrap;" id="sms-group-pills"></div>
+              <div class="recipient-count" id="sms-recipient-count"></div>
             </div>
             <div class="field-group">
               <label class="field-label">Message</label>
-              <textarea class="field" style="height:160px;" id="sms-body" placeholder="Write your SMS message..." oninput="updateChar(this,'sms-count','sms-fill',160)"></textarea>
+              <textarea class="field" style="height:160px;" id="sms-body" placeholder="Write your SMS message…" oninput="updateChar(this,'sms-count','sms-fill',160)"></textarea>
               <div class="char-bar"><div class="char-fill" id="sms-fill"></div></div>
               <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);"><span id="sms-count">0 / 160</span><span>1 SMS credit per recipient</span></div>
             </div>
@@ -525,11 +585,16 @@
               <div class="panel-section-title">Summary</div>
               <div class="send-summary" id="sms-summary">Select recipients above.</div>
             </div>
-            <div class="panel-section">
+            <div class="panel-section" style="display:flex;flex-direction:column;gap:8px;">
               <button class="btn btn-gold" style="width:100%;justify-content:center;padding:11px;" id="sms-send-btn" onclick="sendBroadcast('sms')">
                 <svg viewBox="0 0 14 14" fill="currentColor" style="width:14px;height:14px;"><path d="M1 7l11-5-5 11-2-4-4-2z"/></svg>
                 Send SMS Broadcast
               </button>
+              <div style="display:flex;gap:8px;">
+                <button class="btn" style="flex:1;justify-content:center;font-size:12px;padding:8px 6px;" onclick="saveDraft('sms')">Save Draft</button>
+                <button class="btn" style="flex:1;justify-content:center;font-size:12px;padding:8px 6px;" onclick="saveAsTemplate('sms')">Save Template</button>
+              </div>
+              <button class="btn" style="width:100%;justify-content:center;font-size:12px;padding:8px;opacity:0.5;cursor:not-allowed;" title="SMS test send pending Twilio verification" disabled>Send Test to Me</button>
             </div>
           </div>
         </div>
@@ -539,21 +604,46 @@
       <section class="screen" id="screen-email">
         <div class="compose-layout">
           <div class="compose-main">
+            <div class="compose-panels">
+              <div class="compose-panel">
+                <button class="compose-panel-header" onclick="togglePanel(this,'email-drafts-body')" aria-expanded="false">
+                  Drafts <span class="compose-panel-badge" id="email-draft-badge" style="display:none"></span>
+                  <svg class="compose-panel-chevron" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+                </button>
+                <div class="compose-panel-body" id="email-drafts-body" style="display:none"><div class="compose-panel-empty">No drafts saved.</div></div>
+              </div>
+              <div class="compose-panel">
+                <button class="compose-panel-header" onclick="togglePanel(this,'email-templates-body')" aria-expanded="false">
+                  Templates <span class="compose-panel-badge" id="email-template-badge" style="display:none"></span>
+                  <svg class="compose-panel-chevron" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+                </button>
+                <div class="compose-panel-body" id="email-templates-body" style="display:none"><div class="compose-panel-empty">No templates saved.</div></div>
+              </div>
+            </div>
             <div class="field-group">
               <label class="field-label">Recipients</label>
               <div style="display:flex;gap:8px;flex-wrap:wrap;" id="email-group-pills"></div>
+              <div class="recipient-count" id="email-recipient-count"></div>
             </div>
             <div class="field-group">
               <label class="field-label">From</label>
-              <input class="field" value="Impact House Church &lt;newsletter@impacthouse.org&gt;" id="email-from"/>
+              <input class="field" value="Impact House Church &lt;newsletter@tkpimpacthouse.org&gt;" id="email-from"/>
             </div>
             <div class="field-group">
               <label class="field-label">Subject Line</label>
               <input class="field" id="email-subject" placeholder="e.g. Sunday Service — This Week at Impact House" oninput="updateEmailChecklist()"/>
             </div>
             <div class="field-group">
-              <label class="field-label">Newsletter Body</label>
-              <textarea class="field" style="height:220px;" id="email-body" placeholder="Write your newsletter content here..." oninput="updateEmailChecklist()"></textarea>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <label class="field-label" style="margin-bottom:0">Newsletter Body</label>
+                <div class="preview-toggle">
+                  <button class="preview-tab active" id="email-edit-tab" onclick="setPreviewMode('email','edit')">Edit</button>
+                  <button class="preview-tab" id="email-preview-tab" onclick="setPreviewMode('email','preview')">Preview</button>
+                </div>
+              </div>
+              <textarea class="field" style="height:220px;" id="email-body" placeholder="Write your newsletter content here… or paste HTML for a rich email." oninput="updateEmailChecklist()"></textarea>
+              <div id="email-preview-pane" style="display:none;min-height:220px;border:1px solid var(--border);border-radius:8px;padding:16px 20px;background:var(--white);font-size:13px;line-height:1.7;overflow-y:auto;"></div>
+              <div style="font-size:11.5px;color:var(--muted);margin-top:5px;">Use <code style="font-size:11px;background:var(--warm-gray);padding:1px 5px;border-radius:4px;">{{first_name}}</code> or <code style="font-size:11px;background:var(--warm-gray);padding:1px 5px;border-radius:4px;">{{last_name}}</code> to personalise per recipient.</div>
             </div>
           </div>
           <div class="compose-sidebar-panel">
@@ -574,11 +664,16 @@
               <div class="panel-section-title">Summary</div>
               <div class="send-summary" id="email-summary">Select recipients above.</div>
             </div>
-            <div class="panel-section">
+            <div class="panel-section" style="display:flex;flex-direction:column;gap:8px;">
               <button class="btn btn-gold" style="width:100%;justify-content:center;padding:11px;" id="email-send-btn" onclick="sendBroadcast('email')">
                 <svg viewBox="0 0 14 14" fill="currentColor" style="width:14px;height:14px;"><path d="M1 7l11-5-5 11-2-4-4-2z"/></svg>
                 Send Newsletter
               </button>
+              <div style="display:flex;gap:8px;">
+                <button class="btn" style="flex:1;justify-content:center;font-size:12px;padding:8px 6px;" onclick="saveDraft('email')">Save Draft</button>
+                <button class="btn" style="flex:1;justify-content:center;font-size:12px;padding:8px 6px;" onclick="saveAsTemplate('email')">Save Template</button>
+              </div>
+              <button class="btn" style="width:100%;justify-content:center;font-size:12px;padding:8px;" onclick="sendTest('email')">Send Test to Me</button>
             </div>
           </div>
         </div>
@@ -592,6 +687,7 @@
           <button class="log-filter-tab" onclick="filterLog(this,'email')">Email</button>
         </div>
         <div id="log-list"><div class="loading-state"><div class="spinner"></div> Loading history...</div></div>
+        <div id="log-pagination" style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;"></div>
       </section>
     </div>
   </div>
@@ -612,9 +708,19 @@
       </div>
       <div class="form-group"><label class="form-label">Email Address</label><input class="form-field" type="email" id="m-email" placeholder="member@email.com"/></div>
       <div class="form-group"><label class="form-label">Phone Number</label><input class="form-field" type="tel" id="m-phone" placeholder="(832) 555-0000"/></div>
-      <div class="form-group">
-        <label class="form-label">Status</label>
-        <select class="form-field" id="m-status"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-field" id="m-gender">
+            <option value="">Not specified</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-field" id="m-status"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Tags</label>
@@ -669,6 +775,38 @@
   </div>
 </div>
 
+<!-- BULK UPLOAD MODAL -->
+<div class="modal-overlay" id="bulk-modal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <span class="modal-title">Bulk Upload Members</span>
+      <button class="modal-close" onclick="closeBulkModal()">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+        Upload a CSV file with the columns:<br>
+        <code style="font-size:12px;background:var(--warm-gray);padding:2px 6px;border-radius:4px;">first_name, last_name, email, phone, gender, notify_sms, notify_email, tags</code><br>
+        <span style="font-size:12px;color:var(--muted);">Header row required. <code>tags</code> = comma-separated tag names. <code>notify_*</code> = true/false.</span>
+      </p>
+      <div style="margin-bottom:14px;">
+        <input type="file" id="bulk-file" accept=".csv" onchange="previewBulkCsv(this)" style="font-size:13px;"/>
+      </div>
+      <div id="bulk-preview" style="display:none;">
+        <div style="font-size:12px;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;" id="bulk-preview-count"></div>
+        <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;background:var(--warm-gray);padding:10px 12px;font-size:12px;font-family:monospace;white-space:pre;color:var(--mid);" id="bulk-preview-text"></div>
+      </div>
+      <div id="bulk-results" style="display:none;margin-top:12px;">
+        <div style="font-size:12px;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Results</div>
+        <div style="max-height:220px;overflow-y:auto;font-size:13px;line-height:1.7;" id="bulk-results-body"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeBulkModal()">Close</button>
+      <button class="btn btn-dark" id="bulk-submit-btn" onclick="submitBulkUpload()" disabled>Upload</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- Clerk JS SDK -->
@@ -682,9 +820,10 @@ const API = window.ENV_API_URL || 'https://impact-house.onrender.com/api';
 let currentUser = null;
 let clerkInstance = null;
 let allGroups   = [];
-let memberPage  = 1, memberSearch = '', memberSearchTimer;
-let selectedSmsGroup = '', selectedEmailGroup = '', logChannel = '';
+let memberPage  = 1, memberSearch = '', memberSearchTimer, memberGender = '', memberNotify = '';
+let selectedSmsGroup = '', selectedEmailGroup = '', logChannel = '', logPage = 1;
 const logMessages = {};
+const composeState = { email: { draftId: null }, sms: { draftId: null } };
 
 // ── CLERK INIT ───────────────────────────────────────────
 window.addEventListener('load', async () => {
@@ -812,7 +951,7 @@ function navigate(id) {
   document.getElementById('topbar-add-member').style.display = id === 'members' ? 'none' : '';
   if (id === 'members') loadMembers();
   if (id === 'log') loadLog();
-  if (id === 'sms' || id === 'email') renderGroupPills(id);
+  if (id === 'sms' || id === 'email') { renderGroupPills(id); loadDrafts(id); loadTemplates(id); updateRecipientCount(id); }
 }
 document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => {
   navigate(item.dataset.screen);
@@ -832,9 +971,9 @@ function closeSidebar() {
 async function loadGroups() {
   try {
     allGroups = await get('/members/groups/list');
-    ['q-sms-group','q-email-group'].forEach(id => {
+    ['q-sms-group','q-email-group','filter-group'].forEach(id => {
       const el = document.getElementById(id); if (!el) return;
-      el.innerHTML = '<option value="">All Members</option>';
+      el.innerHTML = id === 'filter-group' ? '<option value="">All groups</option>' : '<option value="">All Members</option>';
       allGroups.forEach(g => { const o = document.createElement('option'); o.value = g.id; o.textContent = g.name; el.appendChild(o); });
     });
   } catch(e) { console.error('Groups:', e); }
@@ -927,6 +1066,7 @@ function renderGroupPills(channel) {
 function setGroupPill(channel, groupId) {
   if (channel === 'sms') selectedSmsGroup = groupId; else selectedEmailGroup = groupId;
   renderGroupPills(channel);
+  updateRecipientCount(channel);
 }
 
 function updateSummary(channel) {
@@ -971,7 +1111,11 @@ async function loadMembers(page = 1) {
   document.getElementById('members-list').innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
   try {
     const params = { page, limit: 20 };
-    if (memberSearch) params.search = memberSearch;
+    if (memberSearch)  params.search   = memberSearch;
+    if (memberGender)  params.gender   = memberGender;
+    if (memberNotify)  params.notify   = memberNotify;
+    const groupFilter = document.getElementById('filter-group')?.value;
+    if (groupFilter)   params.group_id = groupFilter;
     const data = await get('/members?' + new URLSearchParams(params));
     renderMembersTable(data.members, data.total);
   } catch(e) { document.getElementById('members-list').innerHTML = '<div class="empty-state"><p>Failed to load members.</p></div>'; }
@@ -981,6 +1125,12 @@ function searchMembers(val) {
   memberSearch = val;
   clearTimeout(memberSearchTimer);
   memberSearchTimer = setTimeout(() => loadMembers(1), 350);
+}
+
+function setMemberFilter(type, val) {
+  if (type === 'gender') memberGender = val;
+  if (type === 'notify') memberNotify = val;
+  loadMembers(1);
 }
 
 const avBg   = ['#ede9e3','#e6ede8','#e8e4f0','#f0e8e4','#e4ecf0'];
@@ -1004,6 +1154,7 @@ function renderMembersTable(members, total) {
       </div>
       <div class="table-cell">${m.email||'—'}</div>
       <div class="table-cell">${m.phone||'—'}</div>
+      <div class="table-cell">${m.gender||'—'}</div>
       <div class="table-cell"><div class="member-tags">${(m.tags||[]).length ? m.tags.map(t=>`<span class="member-tag${t.type==='custom'?' custom':''}">${t.name}</span>`).join('') : '<span class="member-tag">General Members</span>'}</div></div>
       <div>${badge}</div>
       <div class="row-actions">
@@ -1048,6 +1199,7 @@ function openModal(mode, member) {
   document.getElementById('m-last').value   = member?.last_name  || '';
   document.getElementById('m-email').value  = member?.email || '';
   document.getElementById('m-phone').value  = member?.phone || '';
+  document.getElementById('m-gender').value = member?.gender || '';
   document.getElementById('m-status').value = member?.status || 'active';
   const selectedTagIds = (member?.tags || []).map(t => t.id);
   renderModalTags(selectedTagIds);
@@ -1070,6 +1222,7 @@ async function saveMember() {
     last_name:  document.getElementById('m-last').value.trim(),
     email:      document.getElementById('m-email').value.trim() || null,
     phone:      document.getElementById('m-phone').value.trim() || null,
+    gender:     document.getElementById('m-gender').value || null,
     group_ids:  getSelectedTagIds(),
     status:     document.getElementById('m-status').value,
     notify_sms:   notifyBtn?.dataset.sms   === 'true',
@@ -1090,6 +1243,66 @@ async function deleteMember(id, name) {
   if (!confirm(`Remove ${name} from the directory?`)) return;
   try { await del('/members/' + id); toast(`${name} removed.`); loadMembers(memberPage); loadDashboard(); }
   catch(e) { toast(e.message || 'Failed to delete.', 'error'); }
+}
+
+// ── BULK UPLOAD ───────────────────────────────────────────
+let bulkRows = [];
+
+function openBulkUpload() {
+  bulkRows = [];
+  document.getElementById('bulk-file').value = '';
+  document.getElementById('bulk-preview').style.display = 'none';
+  document.getElementById('bulk-results').style.display = 'none';
+  document.getElementById('bulk-submit-btn').disabled = true;
+  document.getElementById('bulk-modal').classList.add('open');
+}
+function closeBulkModal() { document.getElementById('bulk-modal').classList.remove('open'); }
+document.getElementById('bulk-modal').addEventListener('click', e => { if (e.target.id === 'bulk-modal') closeBulkModal(); });
+
+function previewBulkCsv(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) { toast('CSV must have a header row and at least one data row.', 'error'); return; }
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const required = ['first_name','last_name'];
+    if (!required.every(r => headers.includes(r))) { toast('CSV must include first_name and last_name columns.', 'error'); return; }
+    bulkRows = lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g,''));
+      return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']));
+    }).filter(r => r.first_name || r.last_name);
+    const previewLines = bulkRows.slice(0, 5).map(r => `${r.first_name} ${r.last_name} | ${r.email||'—'} | ${r.phone||'—'}`).join('\n');
+    document.getElementById('bulk-preview-count').textContent = `${bulkRows.length} member${bulkRows.length===1?'':'s'} ready to import`;
+    document.getElementById('bulk-preview-text').textContent = previewLines + (bulkRows.length > 5 ? `\n… and ${bulkRows.length - 5} more` : '');
+    document.getElementById('bulk-preview').style.display = 'block';
+    document.getElementById('bulk-results').style.display = 'none';
+    document.getElementById('bulk-submit-btn').disabled = false;
+  };
+  reader.readAsText(file);
+}
+
+async function submitBulkUpload() {
+  if (!bulkRows.length) return;
+  const btn = document.getElementById('bulk-submit-btn');
+  btn.disabled = true; btn.textContent = 'Uploading…';
+  try {
+    const data = await post('/members/bulk', { rows: bulkRows });
+    const created   = data.results.filter(r => r.status === 'created').length;
+    const duplicate = data.results.filter(r => r.status === 'duplicate').length;
+    const errors    = data.results.filter(r => r.status === 'error').length;
+    document.getElementById('bulk-results-body').innerHTML = data.results.map(r => {
+      const color = r.status === 'created' ? 'var(--gold-dark)' : r.status === 'duplicate' ? 'var(--muted)' : 'var(--danger)';
+      const icon  = r.status === 'created' ? '✓' : r.status === 'duplicate' ? '↩' : '✗';
+      return `<div style="color:${color};">${icon} Row ${r.row}: ${r.name || ''} — ${r.status}${r.message ? ': ' + r.message : ''}</div>`;
+    }).join('');
+    document.getElementById('bulk-results').style.display = 'block';
+    toast(`Imported ${created} members. ${duplicate} duplicate${duplicate===1?'':'s'}. ${errors} error${errors===1?'':'s'}.`);
+    loadMembers(1); loadDashboard();
+  } catch(e) { toast(e.message || 'Bulk upload failed.', 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Upload'; }
 }
 
 // ── SEND ─────────────────────────────────────────────────
@@ -1126,12 +1339,25 @@ async function sendBroadcast(channel) {
   const btn = document.getElementById(channel + '-send-btn');
   btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> ${isLater ? 'Scheduling...' : 'Sending...'}`;
   try {
-    const data = await post('/messages', {
-      title: subject || 'SMS Broadcast', body, subject, channel,
-      recipient_type: groupId ? 'group' : 'all', group_id: groupId || null,
-      send_now: !isLater,
-      scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
-    });
+    let data;
+    const draftId = composeState[channel].draftId;
+    if (draftId && !isLater) {
+      // Promote existing draft to sent
+      data = await post('/messages/' + draftId + '/send', {});
+      composeState[channel].draftId = null;
+    } else {
+      if (draftId && isLater) {
+        // Update draft with latest content then send normally
+        await patch('/messages/' + draftId, { title: subject || 'SMS Broadcast', body, subject, scheduled_at: new Date(scheduledAt).toISOString() });
+        composeState[channel].draftId = null;
+      }
+      data = await post('/messages', {
+        title: subject || 'SMS Broadcast', body, subject, channel,
+        recipient_type: groupId ? 'group' : 'all', group_id: groupId || null,
+        send_now: !isLater,
+        scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      });
+    }
     if (isLater) {
       toast('Message scheduled successfully!');
     } else {
@@ -1139,6 +1365,7 @@ async function sendBroadcast(channel) {
     }
     document.getElementById(channel + '-body').value = '';
     if (channel === 'email') document.getElementById('email-subject').value = '';
+    loadDrafts(channel);
     navigate('log');
   } catch(e) { toast(e.message || 'Failed to send.', 'error'); }
   finally {
@@ -1158,11 +1385,14 @@ function updateEmailChecklist() {
 }
 
 // ── LOG ───────────────────────────────────────────────────
-async function loadLog() {
+async function loadLog(page = 1) {
+  logPage = page;
   document.getElementById('log-list').innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
   try {
-    const data = await get('/messages' + (logChannel ? '?channel=' + logChannel : ''));
-    if (!data.messages.length) { document.getElementById('log-list').innerHTML = '<div class="empty-state"><p>No messages sent yet.</p></div>'; return; }
+    const params = { page, limit: 20 };
+    if (logChannel) params.channel = logChannel;
+    const data = await get('/messages?' + new URLSearchParams(params));
+    if (!data.messages.length) { document.getElementById('log-list').innerHTML = '<div class="empty-state"><p>No messages sent yet.</p></div>'; document.getElementById('log-pagination').innerHTML=''; return; }
     data.messages.forEach(m => { logMessages[m.id] = m; });
     document.getElementById('log-list').innerHTML = '<div class="log-list">' + data.messages.map(m => {
       const isSms = m.channel === 'sms';
@@ -1182,6 +1412,9 @@ async function loadLog() {
       const previewSnippet = m.body ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px;">${m.body.replace(/</g,'&lt;').substring(0,120)}${m.body.length>120?'…':''}</div>` : '';
       return `<div class="log-card" style="cursor:pointer;" onclick="openMessagePreview(logMessages[${m.id}])"><div class="log-type-icon ${isSms?'log-sms':'log-email'}">${icon}</div><div style="min-width:0;flex:1;"><div class="log-title">${m.title}${statusBadge}</div><div class="log-meta">${m.channel.toUpperCase()} · ${m.group_name||'All Members'} · ${date}${openRate}</div>${previewSnippet}${cancelBtn}</div><div class="log-stats"><div class="log-stat-big">${stat.toLocaleString()}</div><div class="log-stat-label">${isSms?'delivered':'opened'}</div></div></div>`;
     }).join('') + '</div>';
+    const logPages = Math.ceil(data.total / 20);
+    document.getElementById('log-pagination').innerHTML = logPages > 1
+      ? Array.from({length: logPages}, (_,i) => `<button class="btn ${i+1===logPage?'btn-dark':'btn-ghost'}" style="padding:6px 12px;" onclick="loadLog(${i+1})">${i+1}</button>`).join('') : '';
   } catch(e) { document.getElementById('log-list').innerHTML = '<div class="empty-state"><p>Failed to load history.</p></div>'; }
 }
 
@@ -1219,7 +1452,7 @@ document.getElementById('message-preview-modal').addEventListener('click', e => 
 
 function filterLog(btn, channel) {
   document.querySelectorAll('.log-filter-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active'); logChannel = channel; loadLog();
+  btn.classList.add('active'); logChannel = channel; loadLog(1);
 }
 
 // ── UTILITIES ─────────────────────────────────────────────
@@ -1255,6 +1488,183 @@ function selectSchedule(btn, channel) {
 }
 
 updateEmailChecklist();
+
+// ── COMPOSE PANELS ───────────────────────────────────────
+function togglePanel(headerBtn, bodyId) {
+  const body = document.getElementById(bodyId);
+  const open = headerBtn.getAttribute('aria-expanded') === 'true';
+  headerBtn.setAttribute('aria-expanded', !open);
+  body.style.display = open ? 'none' : 'block';
+}
+
+// ── PREVIEW TOGGLE ───────────────────────────────────────
+function setPreviewMode(channel, mode) {
+  const textarea = document.getElementById(channel + '-body');
+  const pane     = document.getElementById(channel + '-preview-pane');
+  const editTab  = document.getElementById(channel + '-edit-tab');
+  const prevTab  = document.getElementById(channel + '-preview-tab');
+  if (mode === 'preview') {
+    const raw = textarea.value;
+    pane.innerHTML = (window.DOMPurify ? DOMPurify.sanitize(raw) : raw);
+    textarea.style.display = 'none';
+    pane.style.display = 'block';
+    editTab.classList.remove('active');
+    prevTab.classList.add('active');
+  } else {
+    textarea.style.display = '';
+    pane.style.display = 'none';
+    editTab.classList.add('active');
+    prevTab.classList.remove('active');
+  }
+}
+
+// ── RECIPIENT COUNT ──────────────────────────────────────
+async function updateRecipientCount(channel) {
+  const el = document.getElementById(channel + '-recipient-count');
+  if (!el) return;
+  try {
+    const groupId = channel === 'sms' ? selectedSmsGroup : selectedEmailGroup;
+    const params  = new URLSearchParams({ channel, recipient_type: groupId ? 'group' : 'all' });
+    if (groupId) params.set('group_id', groupId);
+    const { count } = await get('/messages/recipient-count?' + params);
+    el.textContent = `Will send to ${count} member${count !== 1 ? 's' : ''}`;
+  } catch(e) { el.textContent = ''; }
+}
+
+// ── DRAFTS ───────────────────────────────────────────────
+async function loadDrafts(channel) {
+  const bodyEl  = document.getElementById(channel + '-drafts-body');
+  const badge   = document.getElementById(channel + '-draft-badge');
+  if (!bodyEl) return;
+  try {
+    const { messages } = await get('/messages?status=draft&channel=' + channel + '&limit=50');
+    badge.textContent = messages.length || '';
+    badge.style.display = messages.length ? 'inline-flex' : 'none';
+    if (!messages.length) {
+      bodyEl.innerHTML = '<div class="compose-panel-empty">No drafts saved.</div>';
+      return;
+    }
+    bodyEl.innerHTML = messages.map(d => {
+      const date = new Date(d.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<div class="compose-panel-item" onclick="loadDraft(${d.id},'${channel}')">
+        <span class="compose-panel-item-title">${d.title || '(untitled)'}</span>
+        <span class="compose-panel-item-meta">${date}</span>
+        <button class="compose-panel-item-del" onclick="event.stopPropagation();deleteDraft(${d.id},'${channel}')" title="Delete draft">&times;</button>
+      </div>`;
+    }).join('');
+  } catch(e) { bodyEl.innerHTML = '<div class="compose-panel-empty">Failed to load drafts.</div>'; }
+}
+
+async function saveDraft(channel) {
+  const body    = document.getElementById(channel + '-body').value.trim();
+  const subject = channel === 'email' ? document.getElementById('email-subject').value.trim() : null;
+  if (!body) { toast('Write something first.', 'error'); return; }
+  try {
+    const draftId = composeState[channel].draftId;
+    let data;
+    if (draftId) {
+      data = await patch('/messages/' + draftId, { title: subject || 'SMS Draft', body, subject });
+    } else {
+      data = await post('/messages', {
+        title: subject || 'SMS Draft', body, subject, channel,
+        recipient_type: channel === 'sms' ? (selectedSmsGroup ? 'group' : 'all') : (selectedEmailGroup ? 'group' : 'all'),
+        group_id: (channel === 'sms' ? selectedSmsGroup : selectedEmailGroup) || null,
+        send_now: false,
+      });
+      composeState[channel].draftId = data.id;
+    }
+    toast('Draft saved.');
+    loadDrafts(channel);
+  } catch(e) { toast(e.message || 'Failed to save draft.', 'error'); }
+}
+
+function loadDraft(id, channel) {
+  get('/messages/' + id).then(d => {
+    document.getElementById(channel + '-body').value = d.body || '';
+    if (channel === 'email') document.getElementById('email-subject').value = d.subject || '';
+    composeState[channel].draftId = id;
+    if (channel === 'email') { setPreviewMode('email', 'edit'); updateEmailChecklist(); }
+    toast('Draft loaded.');
+  }).catch(() => toast('Failed to load draft.', 'error'));
+}
+
+async function deleteDraft(id, channel) {
+  if (!confirm('Delete this draft?')) return;
+  try {
+    await del('/messages/' + id);
+    if (composeState[channel].draftId === id) composeState[channel].draftId = null;
+    loadDrafts(channel);
+    toast('Draft deleted.');
+  } catch(e) { toast(e.message || 'Failed to delete draft.', 'error'); }
+}
+
+// ── TEMPLATES ────────────────────────────────────────────
+async function loadTemplates(channel) {
+  const bodyEl = document.getElementById(channel + '-templates-body');
+  const badge  = document.getElementById(channel + '-template-badge');
+  if (!bodyEl) return;
+  try {
+    const templates = await get('/templates?channel=' + channel);
+    badge.textContent = templates.length || '';
+    badge.style.display = templates.length ? 'inline-flex' : 'none';
+    if (!templates.length) {
+      bodyEl.innerHTML = '<div class="compose-panel-empty">No templates saved.</div>';
+      return;
+    }
+    bodyEl.innerHTML = templates.map(t => {
+      const date = new Date(t.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<div class="compose-panel-item" onclick="loadTemplate(${t.id},'${channel}')">
+        <span class="compose-panel-item-title">${t.name}</span>
+        <span class="compose-panel-item-meta">${date}</span>
+        <button class="compose-panel-item-del" onclick="event.stopPropagation();deleteTemplate(${t.id},'${channel}')" title="Delete template">&times;</button>
+      </div>`;
+    }).join('');
+  } catch(e) { bodyEl.innerHTML = '<div class="compose-panel-empty">Failed to load templates.</div>'; }
+}
+
+async function saveAsTemplate(channel) {
+  const body    = document.getElementById(channel + '-body').value.trim();
+  const subject = channel === 'email' ? document.getElementById('email-subject').value.trim() : null;
+  if (!body) { toast('Write something first.', 'error'); return; }
+  const name = prompt('Template name:');
+  if (!name) return;
+  try {
+    await post('/templates', { name: name.trim(), channel, subject, body });
+    toast('Template saved.');
+    loadTemplates(channel);
+  } catch(e) { toast(e.message || 'Failed to save template.', 'error'); }
+}
+
+function loadTemplate(id, channel) {
+  get('/templates/' + id).then(t => {
+    document.getElementById(channel + '-body').value = t.body || '';
+    if (channel === 'email') document.getElementById('email-subject').value = t.subject || '';
+    if (channel === 'email') { setPreviewMode('email', 'edit'); updateEmailChecklist(); }
+    toast('Template loaded — edits will not affect the saved template.');
+  }).catch(() => toast('Failed to load template.', 'error'));
+}
+
+async function deleteTemplate(id, channel) {
+  if (!confirm('Delete this template?')) return;
+  try {
+    await del('/templates/' + id);
+    loadTemplates(channel);
+    toast('Template deleted.');
+  } catch(e) { toast(e.message || 'Failed to delete template.', 'error'); }
+}
+
+// ── TEST SEND ────────────────────────────────────────────
+async function sendTest(channel) {
+  const body    = document.getElementById(channel + '-body').value.trim();
+  const subject = channel === 'email' ? document.getElementById('email-subject').value.trim() : null;
+  if (!body) { toast('Write something first.', 'error'); return; }
+  const adminEmail = currentUser?.primaryEmailAddress?.emailAddress || currentUser?.emailAddresses?.[0]?.emailAddress;
+  if (!adminEmail) { toast('Could not determine your email address.', 'error'); return; }
+  try {
+    await post('/messages/test', { channel, subject, body, to: adminEmail });
+    toast(`Test sent to ${adminEmail}`);
+  } catch(e) { toast(e.message || 'Test send failed.', 'error'); }
+}
 </script>
 </body>
 </html>

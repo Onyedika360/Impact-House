@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Join Impact House</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script>
+    window.ENV_API_URL = window.location.hostname === 'localhost'
+      ? 'http://localhost:4000/api'
+      : 'https://impact-house.onrender.com/api';
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #131210; --charcoal: #1e1d1b; --mid: #4a4844; --muted: #7a7874;
+      --border: #e2ddd6; --border-light: #ede9e3; --surface: #f9f7f4; --white: #fff;
+      --gold: #c9a96e; --gold-light: #f0e6d0; --gold-dark: #9e7c46; --warm-gray: #f4f1ec;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'DM Sans', sans-serif;
+      --radius: 10px; --danger: #8b2222;
+    }
+    body {
+      font-family: var(--font-body);
+      background: var(--surface);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+      color: var(--charcoal);
+    }
+    header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    header img { height: 56px; }
+    header h1 {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--black);
+      letter-spacing: 0.01em;
+    }
+    header p { font-size: 13.5px; color: var(--muted); text-align: center; max-width: 320px; }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .field { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 500; color: var(--mid); margin-bottom: 5px; letter-spacing: 0.03em; text-transform: uppercase; }
+    input, select {
+      width: 100%; padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font: 14px/1.4 var(--font-body);
+      color: var(--charcoal);
+      background: var(--white);
+      outline: none;
+      transition: border-color .15s;
+    }
+    input:focus, select:focus { border-color: var(--gold); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .notify-group { display: flex; gap: 8px; margin-top: 4px; }
+    .notify-btn {
+      flex: 1; padding: 8px 10px; border: 1px solid var(--border);
+      border-radius: var(--radius); font: 13px var(--font-body); color: var(--mid);
+      background: var(--white); cursor: pointer; text-align: center; transition: all .15s;
+    }
+    .notify-btn.selected { border-color: var(--gold); background: var(--gold-light); color: var(--gold-dark); font-weight: 500; }
+
+    .btn-submit {
+      width: 100%; padding: 11px; margin-top: 8px;
+      background: var(--gold); color: var(--white); border: none;
+      border-radius: var(--radius); font: 500 15px var(--font-body);
+      cursor: pointer; transition: opacity .15s;
+    }
+    .btn-submit:hover { opacity: .88; }
+    .btn-submit:disabled { opacity: .5; cursor: not-allowed; }
+
+    .error { font-size: 13px; color: var(--danger); margin-top: 10px; display: none; }
+    .error.visible { display: block; }
+
+    .success-card {
+      display: none;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 40px 24px;
+      width: 100%; max-width: 420px;
+      text-align: center;
+    }
+    .success-card.visible { display: block; }
+    .success-icon { font-size: 48px; margin-bottom: 16px; }
+    .success-card h2 { font-family: var(--font-display); font-size: 24px; margin-bottom: 10px; }
+    .success-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="Impact House">
+    <h1>Impact House</h1>
+    <p>Sign up to stay connected with our church community.</p>
+  </header>
+
+  <div class="card" id="form-card">
+    <div class="row">
+      <div class="field">
+        <label>First Name *</label>
+        <input id="s-first" type="text" autocomplete="given-name" placeholder="Jane">
+      </div>
+      <div class="field">
+        <label>Last Name *</label>
+        <input id="s-last" type="text" autocomplete="family-name" placeholder="Smith">
+      </div>
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input id="s-email" type="email" autocomplete="email" placeholder="jane@example.com">
+    </div>
+    <div class="field">
+      <label>Phone</label>
+      <input id="s-phone" type="tel" autocomplete="tel" placeholder="(555) 123-4567">
+    </div>
+    <div class="field">
+      <label>Gender</label>
+      <select id="s-gender">
+        <option value="">Prefer not to say</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Notify me via</label>
+      <div class="notify-group" id="notify-group">
+        <button class="notify-btn selected" data-sms="true"  data-email="true"  type="button">Email &amp; SMS</button>
+        <button class="notify-btn"          data-sms="false" data-email="true"  type="button">Email only</button>
+        <button class="notify-btn"          data-sms="true"  data-email="false" type="button">SMS only</button>
+      </div>
+    </div>
+    <div class="error" id="s-error"></div>
+    <button class="btn-submit" id="s-submit" type="button" onclick="submitSignup()">Join the Community</button>
+  </div>
+
+  <div class="success-card" id="success-card">
+    <div class="success-icon">🙌</div>
+    <h2>Welcome to Impact House!</h2>
+    <p>You're on our list. We look forward to staying connected with you.</p>
+  </div>
+
+  <script>
+    // Notify button toggle
+    document.getElementById('notify-group').addEventListener('click', e => {
+      const btn = e.target.closest('.notify-btn');
+      if (!btn) return;
+      document.querySelectorAll('#notify-group .notify-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+
+    async function submitSignup() {
+      const first_name = document.getElementById('s-first').value.trim();
+      const last_name  = document.getElementById('s-last').value.trim();
+      const email      = document.getElementById('s-email').value.trim();
+      const phone      = document.getElementById('s-phone').value.trim();
+      const gender     = document.getElementById('s-gender').value;
+      const notifyBtn  = document.querySelector('#notify-group .notify-btn.selected');
+      const notify_email = notifyBtn?.dataset.email === 'true';
+      const notify_sms   = notifyBtn?.dataset.sms   === 'true';
+
+      const errorEl = document.getElementById('s-error');
+      errorEl.classList.remove('visible');
+
+      if (!first_name || !last_name) { showError('Please enter your first and last name.'); return; }
+      if (!email && !phone)          { showError('Please provide at least an email or phone number.'); return; }
+
+      const btn = document.getElementById('s-submit');
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+
+      try {
+        const res = await fetch(`${window.ENV_API_URL}/public/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ first_name, last_name, email: email || null, phone: phone || null, gender: gender || null, notify_email, notify_sms }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.error || 'Something went wrong. Please try again.'); btn.disabled = false; btn.textContent = 'Join the Community'; return; }
+        document.getElementById('form-card').style.display = 'none';
+        document.getElementById('success-card').classList.add('visible');
+      } catch {
+        showError('Network error. Please check your connection and try again.');
+        btn.disabled = false;
+        btn.textContent = 'Join the Community';
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('s-error');
+      el.textContent = msg;
+      el.classList.add('visible');
+    }
+  </script>
+</body>
+</html>

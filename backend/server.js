@@ -4,10 +4,12 @@ const cors      = require('cors');
 const helmet    = require('helmet');
 const rateLimit = require('express-rate-limit');
 
-const authRoutes    = require('./routes/auth');
-const memberRoutes  = require('./routes/members');
-const messageRoutes = require('./routes/messages');
-const statsRoutes   = require('./routes/stats');
+const authRoutes      = require('./routes/auth');
+const memberRoutes    = require('./routes/members');
+const messageRoutes   = require('./routes/messages');
+const statsRoutes     = require('./routes/stats');
+const templateRoutes  = require('./routes/templates');
+const publicRoutes    = require('./routes/public');
 const { startScheduler } = require('./scheduler');
 
 const app  = express();
@@ -38,10 +40,12 @@ app.use(rateLimit({
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-app.use('/api/auth',     authRoutes);
-app.use('/api/members',  memberRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/stats',    statsRoutes);
+app.use('/api/auth',      authRoutes);
+app.use('/api/members',   memberRoutes);
+app.use('/api/messages',  messageRoutes);
+app.use('/api/stats',     statsRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/public',    publicRoutes);
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 app.use((_, res) => res.status(404).json({ error: 'Route not found.' }));

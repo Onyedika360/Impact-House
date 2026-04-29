@@ -1,13 +1,15 @@
 const router = require('express').Router();
+const { randomUUID } = require('crypto');
 const db     = require('../db');
 const auth   = require('../middleware/auth');
+const { normalizePhone } = require('../services/phone');
 
 router.use(auth);
 
 // GET /api/members  — list with optional search & filters
 router.get('/', async (req, res) => {
   try {
-    const { search, group_id, status = 'active', page = 1, limit = 50 } = req.query;
+    const { search, group_id, status = 'active', gender, notify, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
     const params = [];
     const conditions = [];
@@ -25,6 +27,12 @@ router.get('/', async (req, res) => {
       const i = params.length;
       conditions.push(`(m.first_name ILIKE $${i} OR m.last_name ILIKE $${i} OR m.email ILIKE $${i} OR m.phone ILIKE $${i})`);
     }
+    if (gender) {
+      params.push(gender);
+      conditions.push(`m.gender = $${params.length}`);
+    }
+    if (notify === 'email') conditions.push(`m.notify_email = true`);
+    if (notify === 'sms')   conditions.push(`m.notify_sms = true`);
 
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
@@ -113,14 +121,14 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/members
 router.post('/', async (req, res) => {
-  const { first_name, last_name, email, phone, group_ids = [], notify_sms = true, notify_email = true, notes } = req.body;
+  const { first_name, last_name, email, phone, gender, group_ids = [], notify_sms = true, notify_email = true, notes } = req.body;
   if (!first_name || !last_name) return res.status(400).json({ error: 'first_name and last_name are required.' });
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO members (first_name, last_name, email, phone, notify_sms, notify_email, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [first_name, last_name, email || null, phone || null, notify_sms, notify_email, notes || null]
+      `INSERT INTO members (first_name, last_name, email, phone, gender, notify_sms, notify_email, notes, unsubscribe_token)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [first_name, last_name, email || null, normalizePhone(phone), gender || null, notify_sms, notify_email, notes || null, randomUUID()]
     );
     const member = rows[0];
 
@@ -148,13 +156,13 @@ router.post('/', async (req, res) => {
 // PATCH /api/members/:id
 router.patch('/:id', async (req, res) => {
   const { group_ids, ...rest } = req.body;
-  const allowed = ['first_name','last_name','email','phone','notify_sms','notify_email','status','notes'];
+  const allowed = ['first_name','last_name','email','phone','gender','notify_sms','notify_email','status','notes'];
   const updates = [];
   const values  = [];
 
   Object.entries(rest).forEach(([key, val]) => {
     if (allowed.includes(key)) {
-      values.push(val);
+      values.push(key === 'phone' ? normalizePhone(val) : val);
       updates.push(`${key} = $${values.length}`);
     }
   });
@@ -198,6 +206,79 @@ router.patch('/:id', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Failed to update member.' });
   }
+});
+
+// POST /api/members/bulk — CSV rows parsed client-side; backend validates + inserts
+router.post('/bulk', async (req, res) => {
+  const { rows: inputRows } = req.body;
+  if (!Array.isArray(inputRows) || !inputRows.length)
+    return res.status(400).json({ error: 'rows array is required.' });
+
+  const client = await db.pool.connect();
+  const results = [];
+  try {
+    await client.query('BEGIN');
+    for (let i = 0; i < inputRows.length; i++) {
+      const r = inputRows[i];
+      const rowNum = i + 1;
+      if (!r.first_name?.trim() || !r.last_name?.trim()) {
+        results.push({ row: rowNum, status: 'error', message: 'first_name and last_name are required.' });
+        continue;
+      }
+      try {
+        const { rows: ins } = await client.query(
+          `INSERT INTO members
+             (first_name, last_name, email, phone, gender, notify_sms, notify_email, status, unsubscribe_token)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,'active',$8)
+           RETURNING id`,
+          [
+            r.first_name.trim(), r.last_name.trim(),
+            r.email?.trim() || null,
+            normalizePhone(r.phone),
+            r.gender?.trim() || null,
+            r.notify_sms !== 'false' && r.notify_sms !== false,
+            r.notify_email !== 'false' && r.notify_email !== false,
+            randomUUID(),
+          ]
+        );
+        const memberId = ins[0].id;
+
+        // Auto-tag: look up group ids by name if provided (comma-separated tag names)
+        if (r.tags) {
+          const tagNames = r.tags.split(',').map(t => t.trim()).filter(Boolean);
+          if (tagNames.length) {
+            const { rows: groups } = await client.query(
+              `SELECT id FROM groups WHERE name = ANY($1)`, [tagNames]
+            );
+            if (groups.length) {
+              const vals   = groups.map((_, gi) => `($1, $${gi + 2})`).join(', ');
+              await client.query(
+                `INSERT INTO member_tags (member_id, group_id) VALUES ${vals} ON CONFLICT DO NOTHING`,
+                [memberId, ...groups.map(g => g.id)]
+              );
+            }
+          }
+        }
+
+        results.push({ row: rowNum, status: 'created', name: `${r.first_name} ${r.last_name}` });
+      } catch (err) {
+        if (err.code === '23505') {
+          results.push({ row: rowNum, status: 'duplicate', name: `${r.first_name} ${r.last_name}` });
+        } else {
+          results.push({ row: rowNum, status: 'error', message: err.message });
+        }
+      }
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Bulk upload failed:', err.message);
+    return res.status(500).json({ error: 'Bulk upload failed.' });
+  } finally {
+    client.release();
+  }
+
+  res.json({ results });
 });
 
 // DELETE /api/members/:id

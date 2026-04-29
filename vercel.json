@@ -2,9 +2,10 @@
   "version": 2,
   "name": "impact-house-church",
   "builds": [
-    { "src": "frontend/index.html", "use": "@vercel/static" }
+    { "src": "frontend/**", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/signup", "dest": "/frontend/signup.html" },
     { "src": "/(.*)", "dest": "/frontend/index.html" }
   ]
 }
