@@ -8,7 +8,7 @@
   ],
   "routes": [
     { "src": "/logo.png",  "dest": "/frontend/logo.png" },
-    { "src": "/signup",    "dest": "/frontend/signup.html" },
+    { "src": "/signup",    "dest": "/signup.html" },
     { "src": "/(.*)",      "dest": "/frontend/index.html" }
   ]
 }
