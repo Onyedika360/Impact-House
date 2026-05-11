@@ -917,14 +917,12 @@ window.addEventListener('load', async () => {
       document.getElementById('auth-loading').style.display = 'none';
       document.getElementById('clerk-signin-overlay').classList.add('show');
       clerk.mountSignIn(document.getElementById('clerk-signin-mount'), {
-        routing: 'virtual',
         afterSignInUrl: window.location.origin + '/',
         afterSignUpUrl: window.location.origin + '/',
         appearance: {
           variables: { colorPrimary: '#c9a96e', colorBackground: '#1a1917', colorText: '#f5f2ed', colorInputBackground: '#2a2927', colorInputText: '#f5f2ed' }
         }
       });
-      clerk.addListener(({ user }) => { if (user) { window.location.reload(); } });
 
       // Manual escape hatch — clicking "Start over" wipes session and reloads.
       window.resetClerkSession = async () => {
