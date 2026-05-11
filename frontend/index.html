@@ -923,6 +923,12 @@ window.addEventListener('load', async () => {
           variables: { colorPrimary: '#c9a96e', colorBackground: '#1a1917', colorText: '#f5f2ed', colorInputBackground: '#2a2927', colorInputText: '#f5f2ed' }
         }
       });
+      // Fallback: if Clerk's native afterSignInUrl redirect doesn't fire
+      // (can happen when target URL equals current URL), reload manually
+      // once the user object appears.
+      clerk.addListener(({ user }) => {
+        if (user) window.location.replace(window.location.origin + '/');
+      });
 
       // Manual escape hatch — clicking "Start over" wipes session and reloads.
       window.resetClerkSession = async () => {
