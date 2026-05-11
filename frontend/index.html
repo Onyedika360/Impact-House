@@ -380,6 +380,12 @@
     <p>Sign in to the Communications Portal</p>
   </div>
   <div id="clerk-signin-mount"></div>
+  <div style="margin-top:18px;text-align:center;">
+    <a href="#" onclick="event.preventDefault(); window.resetClerkSession && window.resetClerkSession();"
+       style="font-size:12px;color:#888;text-decoration:underline;cursor:pointer;">
+      Stuck? Start over
+    </a>
+  </div>
 </div>
 
 <!-- App -->
@@ -902,6 +908,13 @@ window.addEventListener('load', async () => {
     if (clerk.user) {
       await bootApp(clerk);
     } else {
+      // If there's a half-completed sign-in attempt stuck mid-flow (e.g. waiting on 2FA),
+      // clear it so the user starts fresh instead of being trapped on a loading screen.
+      const stuckStatus = clerk.client?.signIn?.status;
+      if (stuckStatus && stuckStatus !== 'complete') {
+        try { await clerk.signOut(); } catch {}
+      }
+
       document.getElementById('auth-loading').style.display = 'none';
       document.getElementById('clerk-signin-overlay').classList.add('show');
       clerk.mountSignIn(document.getElementById('clerk-signin-mount'), {
@@ -913,6 +926,12 @@ window.addEventListener('load', async () => {
         }
       });
       clerk.addListener(({ user }) => { if (user) { window.location.reload(); } });
+
+      // Manual escape hatch — clicking "Start over" wipes session and reloads.
+      window.resetClerkSession = async () => {
+        try { await clerk.signOut(); } catch {}
+        window.location.replace(window.location.origin + '/');
+      };
     }
   } catch (err) {
     document.getElementById('auth-loading').innerHTML = `
