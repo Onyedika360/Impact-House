@@ -916,13 +916,28 @@ window.addEventListener('load', async () => {
 
       document.getElementById('auth-loading').style.display = 'none';
       document.getElementById('clerk-signin-overlay').classList.add('show');
-      clerk.mountSignIn(document.getElementById('clerk-signin-mount'), {
-        afterSignInUrl: window.location.origin + '/',
-        afterSignUpUrl: window.location.origin + '/',
-        appearance: {
-          variables: { colorPrimary: '#c9a96e', colorBackground: '#1a1917', colorText: '#f5f2ed', colorInputBackground: '#2a2927', colorInputText: '#f5f2ed' }
-        }
-      });
+
+      const mountEl = document.getElementById('clerk-signin-mount');
+      const appearance = {
+        variables: { colorPrimary: '#c9a96e', colorBackground: '#1a1917', colorText: '#f5f2ed', colorInputBackground: '#2a2927', colorInputText: '#f5f2ed' }
+      };
+      const wantSignUp = new URLSearchParams(window.location.search).get('mode') === 'signup';
+
+      if (wantSignUp) {
+        clerk.mountSignUp(mountEl, {
+          afterSignUpUrl: window.location.origin + '/',
+          afterSignInUrl: window.location.origin + '/',
+          signInUrl: window.location.origin + '/',
+          appearance,
+        });
+      } else {
+        clerk.mountSignIn(mountEl, {
+          afterSignInUrl: window.location.origin + '/',
+          afterSignUpUrl: window.location.origin + '/',
+          signUpUrl: window.location.origin + '/?mode=signup',
+          appearance,
+        });
+      }
       // Fallback: if Clerk's native afterSignInUrl redirect doesn't fire,
       // detect a successful sign-in via listener OR polling and reload.
       const handleSignedIn = () => window.location.reload();
