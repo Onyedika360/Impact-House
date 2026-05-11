@@ -413,6 +413,11 @@
         <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
         Message Log
       </div>
+      <span class="nav-section-label" id="team-nav-label" style="margin-top:8px;display:none;">Admin</span>
+      <div class="nav-item" data-screen="team" id="team-nav-item" style="display:none;">
+        <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="5" r="2"/><path d="M1 13c0-2.2 1.8-4 4-4s4 1.8 4 4H1z"/><circle cx="11" cy="5" r="2" opacity=".6"/><path d="M11 9c1.7.4 3 2 3 4h-2" opacity=".6"/></svg>
+        Team
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="admin-pill">
@@ -420,7 +425,7 @@
           <div class="admin-avatar" id="admin-avatar">?</div>
           <div>
             <div class="admin-name" id="admin-name">Loading...</div>
-            <div class="admin-role">Administrator</div>
+            <div class="admin-role" id="admin-role-label">Administrator</div>
           </div>
         </div>
         <button class="logout-btn" onclick="doLogout()" title="Sign out">
@@ -689,6 +694,51 @@
         <div id="log-list"><div class="loading-state"><div class="spinner"></div> Loading history...</div></div>
         <div id="log-pagination" style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;"></div>
       </section>
+
+      <!-- TEAM -->
+      <section class="screen" id="screen-team">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Team Members</div>
+            <div style="font-size:13px;color:var(--mid);" id="team-count">—</div>
+          </div>
+          <button class="btn btn-gold" id="invite-btn" onclick="openInviteModal()">+ Invite Team Member</button>
+        </div>
+
+        <div id="team-list">
+          <div class="loading-state"><div class="spinner"></div> Loading team…</div>
+        </div>
+
+        <div style="margin-top:32px;border-top:1px solid var(--border-light);padding-top:24px;" id="pending-invites-section">
+          <div style="font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Pending Invitations</div>
+          <div id="pending-list"><div style="font-size:13px;color:var(--muted);">Loading…</div></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE MODAL -->
+<div class="modal-overlay" id="invite-modal" style="display:none;">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">Invite Team Member</span>
+      <button class="modal-close" onclick="closeInviteModal()">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-field" type="email" id="inv-email" placeholder="colleague@example.com"/></div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-field" id="inv-role">
+          <option value="editor">Editor — can send messages and view members</option>
+          <option value="admin">Admin — full access including team management</option>
+        </select>
+      </div>
+      <p id="inv-error" style="font-size:13px;color:var(--danger);margin-top:8px;display:none;"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeInviteModal()">Cancel</button>
+      <button class="btn btn-gold" id="inv-submit" onclick="sendInvite()">Send Invitation</button>
     </div>
   </div>
 </div>
@@ -853,7 +903,8 @@ async function bootApp(clerk) {
   // Resolve the active session — try multiple Clerk session paths
   const activeSession = clerk.session ?? clerk.client?.activeSessions?.[0] ?? null;
 
-  // Verify this user is an authorized admin before showing the app
+  // Verify this user is authorized and get their role from the DB
+  let appUserRole = 'editor';
   if (activeSession) {
     try {
       const token = await activeSession.getToken();
@@ -872,6 +923,11 @@ async function bootApp(clerk) {
           </div>`;
         return;
       }
+      if (res.ok) {
+        const me = await res.json();
+        appUserRole = me.role || 'editor';
+        window._appUserRole = appUserRole;
+      }
     } catch(e) {
       console.warn('Auth check failed, proceeding:', e.message);
     }
@@ -882,11 +938,18 @@ async function bootApp(clerk) {
   // Update sidebar user info
   const name = [currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') || 'Admin';
   document.getElementById('admin-name').textContent = name;
+  document.getElementById('admin-role-label').textContent = appUserRole === 'admin' ? 'Administrator' : 'Editor';
   const avatarEl = document.getElementById('admin-avatar');
   if (currentUser.imageUrl) {
     avatarEl.innerHTML = `<img src="${currentUser.imageUrl}" alt="${name}"/>`;
   } else {
     avatarEl.textContent = name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase();
+  }
+
+  // Show admin-only nav items
+  if (appUserRole === 'admin') {
+    document.getElementById('team-nav-label').style.display = '';
+    document.getElementById('team-nav-item').style.display = '';
   }
 
   document.getElementById('app').classList.add('visible');
@@ -936,7 +999,8 @@ const pageMeta = {
   dashboard: ['Dashboard', ''], members: ['Members', ''],
   sms: ['Send SMS', 'Compose a text broadcast'],
   email: ['Email Newsletter', 'Write and send to your congregation'],
-  log: ['Message Log', 'Full history of all broadcasts']
+  log: ['Message Log', 'Full history of all broadcasts'],
+  team: ['Team', 'Manage access and invitations'],
 };
 function navigate(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -951,6 +1015,7 @@ function navigate(id) {
   document.getElementById('topbar-add-member').style.display = id === 'members' ? 'none' : '';
   if (id === 'members') loadMembers();
   if (id === 'log') loadLog();
+  if (id === 'team') loadTeam();
   if (id === 'sms' || id === 'email') { renderGroupPills(id); loadDrafts(id); loadTemplates(id); updateRecipientCount(id); }
 }
 document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => {
@@ -1453,6 +1518,118 @@ document.getElementById('message-preview-modal').addEventListener('click', e => 
 function filterLog(btn, channel) {
   document.querySelectorAll('.log-filter-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active'); logChannel = channel; loadLog(1);
+}
+
+// ── TEAM ──────────────────────────────────────────────────
+async function loadTeam() {
+  try {
+    const [teamRows, inviteRows] = await Promise.all([
+      get('/auth/team'),
+      get('/invitations'),
+    ]);
+
+    // Team members list
+    document.getElementById('team-count').textContent = `${teamRows.length} member${teamRows.length !== 1 ? 's' : ''}`;
+    const isAdmin = window._appUserRole === 'admin';
+    document.getElementById('team-list').innerHTML = teamRows.map(u => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-light);gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--gold-light);color:var(--gold-dark);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">
+            ${(u.name || u.email).split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase()}
+          </div>
+          <div style="min-width:0;">
+            <div style="font-size:14px;font-weight:500;color:var(--charcoal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.name || '—'}</div>
+            <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.email}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <span style="font-size:11px;font-weight:500;padding:3px 10px;border-radius:12px;background:${u.role==='admin'?'var(--gold-light)':'var(--surface)'};color:${u.role==='admin'?'var(--gold-dark)':'var(--mid)'};">${u.role}</span>
+          ${u.status === 'suspended' ? '<span style="font-size:11px;padding:3px 10px;border-radius:12px;background:#fef2f2;color:#8b2222;">suspended</span>' : ''}
+          ${isAdmin ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="openTeamEdit(${u.id},'${u.role}','${u.status}','${(u.name||'').replace(/'/g,"\\'")}')">Edit</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    // Pending invitations
+    if (!inviteRows.length) {
+      document.getElementById('pending-list').innerHTML = '<div style="font-size:13px;color:var(--muted);">No pending invitations.</div>';
+    } else {
+      document.getElementById('pending-list').innerHTML = inviteRows.map(inv => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light);gap:12px;">
+          <div>
+            <div style="font-size:13px;color:var(--charcoal);">${inv.email}</div>
+            <div style="font-size:12px;color:var(--muted);">${inv.role} · invited by ${inv.invited_by_name || 'Admin'} · expires ${new Date(inv.expires_at).toLocaleDateString()}</div>
+          </div>
+          ${isAdmin ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--danger);" onclick="revokeInvite(${inv.id}, this)">Revoke</button>` : ''}
+        </div>
+      `).join('');
+    }
+  } catch(e) {
+    document.getElementById('team-list').innerHTML = `<div class="empty-state">${e.message}</div>`;
+  }
+}
+
+function openInviteModal() {
+  document.getElementById('inv-email').value = '';
+  document.getElementById('inv-role').value = 'editor';
+  document.getElementById('inv-error').style.display = 'none';
+  document.getElementById('inv-submit').disabled = false;
+  document.getElementById('inv-submit').textContent = 'Send Invitation';
+  document.getElementById('invite-modal').style.display = 'flex';
+}
+function closeInviteModal() { document.getElementById('invite-modal').style.display = 'none'; }
+
+async function sendInvite() {
+  const email = document.getElementById('inv-email').value.trim();
+  const role  = document.getElementById('inv-role').value;
+  const errEl = document.getElementById('inv-error');
+  errEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Email is required.'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('inv-submit');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await post('/invitations', { email, role });
+    closeInviteModal();
+    toast(`Invitation sent to ${email}`);
+    loadTeam();
+  } catch(e) {
+    errEl.textContent = e.message; errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Send Invitation';
+  }
+}
+
+async function revokeInvite(id, btn) {
+  if (!confirm('Revoke this invitation?')) return;
+  btn.disabled = true;
+  try {
+    await del('/invitations/' + id);
+    toast('Invitation revoked');
+    loadTeam();
+  } catch(e) {
+    toast(e.message, 'error'); btn.disabled = false;
+  }
+}
+
+let _editingTeamId = null;
+function openTeamEdit(id, role, status, name) {
+  _editingTeamId = id;
+  const newRole   = role === 'admin' ? 'editor' : 'admin';
+  const newStatus = status === 'active' ? 'suspended' : 'active';
+  const actions = [];
+  actions.push(`Change role to ${newRole}`);
+  actions.push(status === 'active' ? 'Suspend access' : 'Restore access');
+  const choice = prompt(`Editing ${name || 'user'}:\n1 — ${actions[0]}\n2 — ${actions[1]}\n\nEnter 1 or 2 (or cancel):`);
+  if (!choice) return;
+  if (choice === '1') updateTeamMember(id, { role: newRole });
+  else if (choice === '2') updateTeamMember(id, { status: newStatus });
+}
+
+async function updateTeamMember(id, payload) {
+  try {
+    await patch('/auth/team/' + id, payload);
+    toast('Updated');
+    loadTeam();
+  } catch(e) { toast(e.message, 'error'); }
 }
 
 // ── UTILITIES ─────────────────────────────────────────────

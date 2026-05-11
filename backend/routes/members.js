@@ -1,7 +1,8 @@
 const router = require('express').Router();
 const { randomUUID } = require('crypto');
-const db     = require('../db');
-const auth   = require('../middleware/auth');
+const db            = require('../db');
+const auth          = require('../middleware/auth');
+const requireRole   = require('../middleware/requireRole');
 const { normalizePhone } = require('../services/phone');
 
 router.use(auth);
@@ -90,7 +91,7 @@ router.post('/groups', async (req, res) => {
 });
 
 // DELETE /api/members/groups/:id — delete a custom tag only
-router.delete('/groups/:id', async (req, res) => {
+router.delete('/groups/:id', requireRole('admin'), async (req, res) => {
   const { rowCount } = await db.query(
     `DELETE FROM groups WHERE id = $1 AND type = 'custom'`,
     [req.params.id]
@@ -281,8 +282,8 @@ router.post('/bulk', async (req, res) => {
   res.json({ results });
 });
 
-// DELETE /api/members/:id
-router.delete('/:id', async (req, res) => {
+// DELETE /api/members/:id — admin only
+router.delete('/:id', requireRole('admin'), async (req, res) => {
   const { rowCount } = await db.query('DELETE FROM members WHERE id = $1', [req.params.id]);
   if (!rowCount) return res.status(404).json({ error: 'Member not found.' });
   res.json({ success: true });

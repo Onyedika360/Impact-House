@@ -4,12 +4,13 @@ const cors      = require('cors');
 const helmet    = require('helmet');
 const rateLimit = require('express-rate-limit');
 
-const authRoutes      = require('./routes/auth');
-const memberRoutes    = require('./routes/members');
-const messageRoutes   = require('./routes/messages');
-const statsRoutes     = require('./routes/stats');
-const templateRoutes  = require('./routes/templates');
-const publicRoutes    = require('./routes/public');
+const authRoutes        = require('./routes/auth');
+const memberRoutes      = require('./routes/members');
+const messageRoutes     = require('./routes/messages');
+const statsRoutes       = require('./routes/stats');
+const templateRoutes    = require('./routes/templates');
+const publicRoutes      = require('./routes/public');
+const invitationRoutes  = require('./routes/invitations');
 const { startScheduler } = require('./scheduler');
 const db              = require('./db');
 
@@ -46,7 +47,8 @@ app.use('/api/members',   memberRoutes);
 app.use('/api/messages',  messageRoutes);
 app.use('/api/stats',     statsRoutes);
 app.use('/api/templates', templateRoutes);
-app.use('/api/public',    publicRoutes);
+app.use('/api/public',       publicRoutes);
+app.use('/api/invitations', invitationRoutes);
 
 app.get('/api/health', async (_, res) => {
   try {

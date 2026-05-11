@@ -1,10 +1,25 @@
 const router = require('express').Router();
-const db     = require('../db');
-const auth   = require('../middleware/auth');
-const { dispatchMessage }  = require('../services/sender');
-const { sendTestEmail }    = require('../services/email');
+const db           = require('../db');
+const auth         = require('../middleware/auth');
+const requireRole  = require('../middleware/requireRole');
+const { dispatchMessage } = require('../services/sender');
+const { sendTestEmail }   = require('../services/email');
 
 router.use(auth);
+
+// Per-user send rate limiter — max 1 broadcast per 60 s
+const lastSentAt = new Map();
+function checkSendRateLimit(req, res, next) {
+  const key  = req.user.id;
+  const now  = Date.now();
+  const last = lastSentAt.get(key) || 0;
+  if (now - last < 60_000) {
+    const wait = Math.ceil((60_000 - (now - last)) / 1000);
+    return res.status(429).json({ error: `Please wait ${wait}s before sending another broadcast.` });
+  }
+  lastSentAt.set(key, now);
+  next();
+}
 
 // GET /api/messages
 router.get('/', async (req, res) => {
@@ -67,7 +82,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/messages — create (draft / scheduled / send-now)
-router.post('/', async (req, res) => {
+router.post('/', checkSendRateLimit, async (req, res) => {
   const { title, body, subject, channel, recipient_type = 'all', group_id, scheduled_at, send_now = false } = req.body;
   if (!title || !body || !channel)
     return res.status(400).json({ error: 'title, body and channel are required.' });
@@ -118,7 +133,7 @@ router.post('/test', async (req, res) => {
 });
 
 // POST /api/messages/:id/send — promote an existing draft to sent
-router.post('/:id/send', async (req, res) => {
+router.post('/:id/send', checkSendRateLimit, async (req, res) => {
   try {
     const { rows } = await db.query(
       `UPDATE messages SET status = 'sending' WHERE id = $1 AND status = 'draft' RETURNING *`,
@@ -156,7 +171,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE /api/messages/:id — cancel draft or scheduled messages
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('admin'), async (req, res) => {
   const { rowCount } = await db.query(
     `DELETE FROM messages WHERE id = $1 AND status IN ('draft', 'scheduled')`, [req.params.id]
   );

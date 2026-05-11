@@ -2,13 +2,15 @@
   "version": 2,
   "name": "impact-house-church",
   "builds": [
-    { "src": "frontend/index.html",  "use": "@vercel/static" },
-    { "src": "frontend/signup.html", "use": "@vercel/static" },
-    { "src": "frontend/logo.png",    "use": "@vercel/static" }
+    { "src": "frontend/index.html",        "use": "@vercel/static" },
+    { "src": "frontend/signup.html",       "use": "@vercel/static" },
+    { "src": "frontend/accept-invite.html","use": "@vercel/static" },
+    { "src": "frontend/logo.png",          "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/logo.png",  "dest": "/frontend/logo.png" },
-    { "src": "/signup",    "dest": "/signup.html" },
-    { "src": "/(.*)",      "dest": "/frontend/index.html" }
+    { "src": "/logo.png",       "dest": "/frontend/logo.png" },
+    { "src": "/signup",         "dest": "/signup.html" },
+    { "src": "/accept-invite",  "dest": "/accept-invite.html" },
+    { "src": "/(.*)",           "dest": "/frontend/index.html" }
   ]
 }

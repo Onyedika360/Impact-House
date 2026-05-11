@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Accept Invitation — Impact House</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script>
+    window.ENV_API_URL = window.location.hostname === 'localhost'
+      ? 'http://localhost:4000/api'
+      : 'https://impact-house.onrender.com/api';
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #131210; --charcoal: #1e1d1b; --mid: #4a4844; --muted: #7a7874;
+      --border: #e2ddd6; --surface: #f9f7f4; --white: #fff;
+      --gold: #c9a96e; --gold-light: #f0e6d0; --gold-dark: #9e7c46;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'DM Sans', sans-serif;
+      --radius: 10px; --danger: #8b2222;
+    }
+    body {
+      font-family: var(--font-body);
+      background: var(--surface);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+      color: var(--charcoal);
+    }
+    header {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px; margin-bottom: 28px;
+    }
+    header img { height: 56px; }
+    header h1 { font-family: var(--font-display); font-size: 26px; font-weight: 600; color: var(--black); }
+    .card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 14px; padding: 32px 28px; width: 100%; max-width: 420px;
+    }
+    .invite-badge {
+      display: inline-block; padding: 4px 12px;
+      background: var(--gold-light); color: var(--gold-dark);
+      border-radius: 20px; font-size: 12px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px;
+    }
+    .card h2 { font-family: var(--font-display); font-size: 22px; margin-bottom: 8px; }
+    .card p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+    .card p strong { color: var(--charcoal); }
+    .field { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 500; color: var(--mid); margin-bottom: 5px; letter-spacing: 0.03em; text-transform: uppercase; }
+    input {
+      width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+      border-radius: var(--radius); font: 14px/1.4 var(--font-body);
+      color: var(--charcoal); background: var(--white); outline: none; transition: border-color .15s;
+    }
+    input:focus { border-color: var(--gold); }
+    input:read-only { background: var(--surface); color: var(--muted); }
+    .btn {
+      width: 100%; padding: 11px; margin-top: 4px;
+      background: var(--gold); color: var(--white); border: none;
+      border-radius: var(--radius); font: 500 15px var(--font-body);
+      cursor: pointer; transition: opacity .15s;
+    }
+    .btn:hover { opacity: .88; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .error-msg { font-size: 13px; color: var(--danger); margin-top: 10px; display: none; }
+    .error-msg.visible { display: block; }
+    .clerk-wrap { margin-top: 20px; }
+
+    /* Success + error state cards */
+    .state-card {
+      display: none; background: var(--white); border: 1px solid var(--border);
+      border-radius: 14px; padding: 40px 28px; width: 100%; max-width: 420px; text-align: center;
+    }
+    .state-card.visible { display: block; }
+    .state-icon { font-size: 48px; margin-bottom: 16px; }
+    .state-card h2 { font-family: var(--font-display); font-size: 22px; margin-bottom: 10px; }
+    .state-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .state-card a { color: var(--gold-dark); text-decoration: none; font-weight: 500; }
+    .state-card a:hover { text-decoration: underline; }
+
+    #loading { font-size: 14px; color: var(--muted); margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="Impact House">
+    <h1>Impact House</h1>
+  </header>
+
+  <p id="loading">Validating invitation…</p>
+
+  <!-- Main invite card (shown after token validates) -->
+  <div class="card" id="invite-card" style="display:none">
+    <div class="invite-badge" id="role-badge">Team Invitation</div>
+    <h2>You've been invited!</h2>
+    <p>You're joining the Impact House team as <strong id="invite-role"></strong>. Sign in (or create an account) with the email below to accept.</p>
+    <div class="field">
+      <label>Your Email</label>
+      <input id="invite-email" type="email" readonly>
+    </div>
+    <div class="field">
+      <label>Your Name</label>
+      <input id="invite-name" type="text" placeholder="Jane Smith" autocomplete="name">
+    </div>
+    <!-- Shown when already signed in to correct account -->
+    <button class="btn" id="accept-btn" style="display:none" onclick="acceptInvite()">Accept Invitation</button>
+    <p class="error-msg" id="error-msg"></p>
+    <!-- Clerk sign-in mounted here when not signed in -->
+    <div class="clerk-wrap" id="clerk-mount"></div>
+  </div>
+
+  <!-- Success state -->
+  <div class="state-card" id="success-card">
+    <div class="state-icon">🎉</div>
+    <h2>Welcome to the team!</h2>
+    <p>Your account is set up. <a href="/">Go to the dashboard →</a></p>
+  </div>
+
+  <!-- Error state (invalid/expired token) -->
+  <div class="state-card" id="token-error-card">
+    <div class="state-icon">⚠️</div>
+    <h2>Invalid Invitation</h2>
+    <p id="token-error-msg">This invitation link is invalid or has expired. Ask an admin to send a new one.</p>
+  </div>
+
+  <!-- Clerk JS -->
+  <script
+    data-clerk-publishable-key="pk_test_aW50ZWdyYWwtZmlsbHktOTQuY2xlcmsuYWNjb3VudHMuZGV2JA"
+    src="https://integrated-filly-94.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+    crossorigin="anonymous">
+  </script>
+  <script>
+    const API = window.ENV_API_URL;
+    const params = new URLSearchParams(window.location.search);
+    const inviteToken = params.get('token');
+
+    let inviteEmail = '';
+    let clerkInstance = null;
+
+    async function init() {
+      if (!inviteToken) return showTokenError('No invitation token found in this link.');
+
+      // 1. Validate the token (public endpoint, no auth needed)
+      let inviteData;
+      try {
+        const r = await fetch(`${API}/public/validate-invite?token=${encodeURIComponent(inviteToken)}`);
+        inviteData = await r.json();
+        if (!r.ok) return showTokenError(inviteData.error);
+      } catch {
+        return showTokenError('Network error. Please check your connection.');
+      }
+
+      inviteEmail = inviteData.email;
+      document.getElementById('invite-email').value = inviteEmail;
+      document.getElementById('invite-role').textContent = inviteData.role;
+      document.getElementById('role-badge').textContent = inviteData.role.charAt(0).toUpperCase() + inviteData.role.slice(1) + ' Invitation';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('invite-card').style.display = 'block';
+
+      // 2. Load Clerk and decide UI state
+      const clerk = window.Clerk;
+      await clerk.load();
+      clerkInstance = clerk;
+
+      if (clerk.user) {
+        // User already signed in — show accept button directly
+        document.getElementById('accept-btn').style.display = 'block';
+        // Pre-fill name from Clerk if available
+        const clerkName = clerk.user.fullName || '';
+        if (clerkName) document.getElementById('invite-name').value = clerkName;
+      } else {
+        // Mount Clerk sign-in/sign-up; listen for successful auth then accept
+        clerk.mountSignIn(document.getElementById('clerk-mount'), {
+          signUpUrl: window.location.href,
+          afterSignInUrl: window.location.href,
+          afterSignUpUrl: window.location.href,
+        });
+        clerk.addListener(({ user }) => {
+          if (user) {
+            // User just signed in → hide clerk UI, show accept button
+            document.getElementById('clerk-mount').innerHTML = '';
+            document.getElementById('accept-btn').style.display = 'block';
+            if (user.fullName) document.getElementById('invite-name').value = user.fullName;
+          }
+        });
+      }
+    }
+
+    async function acceptInvite() {
+      const name = document.getElementById('invite-name').value.trim();
+      const btn = document.getElementById('accept-btn');
+      btn.disabled = true;
+      btn.textContent = 'Accepting…';
+      clearError();
+
+      try {
+        const session = clerkInstance?.session ?? clerkInstance?.client?.activeSessions?.[0] ?? null;
+        const jwt = await session?.getToken();
+        if (!jwt) { showError('No active session. Please sign in again.'); btn.disabled = false; btn.textContent = 'Accept Invitation'; return; }
+
+        const r = await fetch(`${API}/invitations/accept`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + jwt },
+          body: JSON.stringify({ token: inviteToken, name }),
+        });
+        const data = await r.json();
+
+        if (!r.ok) {
+          if (r.status === 409) {
+            // Already has an account — just redirect
+            document.getElementById('invite-card').style.display = 'none';
+            document.getElementById('success-card').style.display = 'block';
+            document.getElementById('success-card').classList.add('visible');
+            return;
+          }
+          showError(data.error || 'Failed to accept invitation.');
+          btn.disabled = false;
+          btn.textContent = 'Accept Invitation';
+          return;
+        }
+
+        document.getElementById('invite-card').style.display = 'none';
+        document.getElementById('success-card').classList.add('visible');
+      } catch {
+        showError('Network error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Accept Invitation';
+      }
+    }
+
+    function showTokenError(msg) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('token-error-msg').textContent = msg || 'This invitation link is invalid or has expired.';
+      document.getElementById('token-error-card').classList.add('visible');
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.classList.add('visible');
+    }
+
+    function clearError() {
+      const el = document.getElementById('error-msg');
+      el.textContent = '';
+      el.classList.remove('visible');
+    }
+
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>
