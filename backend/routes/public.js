@@ -102,26 +102,6 @@ router.get('/unsubscribe', async (req, res) => {
   }
 });
 
-// GET /api/public/validate-invite?token=… — lets accept-invite.html check a token before Clerk sign-in
-router.get('/validate-invite', async (req, res) => {
-  const { token } = req.query;
-  if (!token) return res.status(400).json({ error: 'token is required.' });
-
-  try {
-    const { rows } = await db.query(
-      `SELECT email, role FROM invitations
-       WHERE token = $1 AND accepted_at IS NULL AND expires_at > NOW()`,
-      [token]
-    );
-    if (!rows.length)
-      return res.status(400).json({ error: 'Invalid or expired invitation.' });
-
-    res.json({ valid: true, email: rows[0].email, role: rows[0].role });
-  } catch (err) {
-    console.error('Validate invite error:', err.message);
-    res.status(500).json({ error: 'Failed to validate invitation.' });
-  }
-});
 
 function unsubscribePage(title, message, success) {
   const color = success ? '#5a7a5a' : '#8b4444';

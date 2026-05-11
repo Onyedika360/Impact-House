@@ -28,7 +28,8 @@ module.exports = async (req, res, next) => {
       const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || email;
 
       const { rows: countRows } = await db.query('SELECT COUNT(*) FROM users');
-      const role = parseInt(countRows[0].count, 10) === 0 ? 'admin' : 'editor';
+      const metaRole = clerkUser.publicMetadata?.role;
+      const role = metaRole || (parseInt(countRows[0].count, 10) === 0 ? 'admin' : 'editor');
 
       const insert = await db.query(
         `INSERT INTO users (clerk_id, email, name, role)
