@@ -877,22 +877,32 @@ const composeState = { email: { draftId: null }, sms: { draftId: null } };
 
 // ── CLERK INIT ───────────────────────────────────────────
 window.addEventListener('load', async () => {
-  const clerk = window.Clerk;
-  await clerk.load();
+  try {
+    const clerk = window.Clerk;
+    if (!clerk) throw new Error('Clerk JS failed to load — check the script URL or network.');
+    await clerk.load();
 
-  if (clerk.user) {
-    await bootApp(clerk);
-  } else {
-    // Show sign-in UI
-    document.getElementById('auth-loading').style.display = 'none';
-    document.getElementById('clerk-signin-overlay').classList.add('show');
-    clerk.mountSignIn(document.getElementById('clerk-signin-mount'), {
-      appearance: {
-        variables: { colorPrimary: '#c9a96e', colorBackground: '#1a1917', colorText: '#f5f2ed', colorInputBackground: '#2a2927', colorInputText: '#f5f2ed' }
-      }
-    });
-    // Poll for sign-in completion
-    clerk.addListener(({ user }) => { if (user) { window.location.reload(); } });
+    if (clerk.user) {
+      await bootApp(clerk);
+    } else {
+      document.getElementById('auth-loading').style.display = 'none';
+      document.getElementById('clerk-signin-overlay').classList.add('show');
+      clerk.mountSignIn(document.getElementById('clerk-signin-mount'), {
+        routing: 'virtual',
+        afterSignInUrl: window.location.href,
+        afterSignUpUrl: window.location.href,
+        appearance: {
+          variables: { colorPrimary: '#c9a96e', colorBackground: '#1a1917', colorText: '#f5f2ed', colorInputBackground: '#2a2927', colorInputText: '#f5f2ed' }
+        }
+      });
+      clerk.addListener(({ user }) => { if (user) { window.location.reload(); } });
+    }
+  } catch (err) {
+    document.getElementById('auth-loading').innerHTML = `
+      <div style="text-align:center;padding:24px;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:#f5f2ed;margin-bottom:10px;">Sign-in unavailable</div>
+        <div style="font-size:13px;color:#888;">${err.message}</div>
+      </div>`;
   }
 });
 
