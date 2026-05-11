@@ -6,9 +6,7 @@
   <title>Accept Invitation — Impact House</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <script>
-    window.CLERK_KEY = window.location.hostname === 'localhost'
-      ? 'pk_test_aW50ZWdyYWwtZmlsbHktOTQuY2xlcmsuYWNjb3VudHMuZGV2JA'
-      : 'pk_live_Y2xlcmsuYXBwLnRrcGltcGFjdGhvdXNlLm9yZyQ';
+    window.CLERK_KEY = 'pk_live_Y2xlcmsuYXBwLnRrcGltcGFjdGhvdXNlLm9yZyQ';
   </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -66,9 +64,7 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('error-card').classList.add('visible');
     } else {
-      const src = window.location.hostname === 'localhost'
-        ? 'https://integrated-filly-94.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js'
-        : 'https://clerk.app.tkpimpacthouse.org/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
+      const src = 'https://clerk.app.tkpimpacthouse.org/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
 
       const s = document.createElement('script');
       s.src = src;
