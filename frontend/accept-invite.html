@@ -9,6 +9,9 @@
     window.ENV_API_URL = window.location.hostname === 'localhost'
       ? 'http://localhost:4000/api'
       : 'https://impact-house.onrender.com/api';
+    window.CLERK_KEY = window.location.hostname === 'localhost'
+      ? 'pk_test_aW50ZWdyYWwtZmlsbHktOTQuY2xlcmsuYWNjb3VudHMuZGV2JA'
+      : 'pk_live_Y2xlcmsuYXBwLnRrcGltcGFjdGhvdXNlLm9yZyQ';
   </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -127,12 +130,6 @@
     <p id="token-error-msg">This invitation link is invalid or has expired. Ask an admin to send a new one.</p>
   </div>
 
-  <!-- Clerk JS -->
-  <script
-    data-clerk-publishable-key="pk_live_Y2xlcmsuYXBwLnRrcGltcGFjdGhvdXNlLm9yZyQ"
-    src="https://clerk.app.tkpimpacthouse.org/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
-    crossorigin="anonymous">
-  </script>
   <script>
     const API = window.ENV_API_URL;
     const params = new URLSearchParams(window.location.search);
@@ -140,6 +137,21 @@
 
     let inviteEmail = '';
     let clerkInstance = null;
+
+    function loadClerk() {
+      const src = window.location.hostname === 'localhost'
+        ? 'https://integrated-filly-94.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js'
+        : 'https://clerk.app.tkpimpacthouse.org/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.setAttribute('data-clerk-publishable-key', window.CLERK_KEY);
+        s.crossOrigin = 'anonymous';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Clerk script failed to load.'));
+        document.head.appendChild(s);
+      });
+    }
 
     async function init() {
       if (!inviteToken) return showTokenError('No invitation token found in this link.');
@@ -161,7 +173,12 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('invite-card').style.display = 'block';
 
-      // 2. Load Clerk and decide UI state
+      // 2. Load Clerk dynamically and decide UI state
+      try {
+        await loadClerk();
+      } catch (e) {
+        return showTokenError('Sign-in service unavailable. Please try again later.');
+      }
       const clerk = window.Clerk;
       await clerk.load();
       clerkInstance = clerk;
