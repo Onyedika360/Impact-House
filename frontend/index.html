@@ -931,11 +931,23 @@ window.addEventListener('load', async () => {
         try { clerk.unmountSignUp(mountEl); } catch {}
         mountEl.innerHTML = '';
         if (currentMode === 'signup') {
-          clerk.mountSignUp(mountEl, {
-            afterSignUpUrl: window.location.origin + '/',
-            afterSignInUrl: window.location.origin + '/',
-            appearance,
-          });
+          try {
+            clerk.mountSignUp(mountEl, {
+              afterSignUpUrl: window.location.origin + '/',
+              afterSignInUrl: window.location.origin + '/',
+              appearance,
+            });
+          } catch (err) {
+            console.error('mountSignUp failed:', err);
+            mountEl.innerHTML = `<div style="color:#f5f2ed;font-size:13px;text-align:center;padding:20px;">Sign-up form failed to load. Click below to open it in a popup.</div>`;
+          }
+          // Fallback: if mountSignUp renders nothing after 1s, open the modal
+          setTimeout(() => {
+            if (currentMode === 'signup' && mountEl.children.length === 0) {
+              console.warn('mountSignUp rendered empty — falling back to openSignUp modal');
+              try { clerk.openSignUp({ afterSignUpUrl: window.location.origin + '/' }); } catch (e) { console.error(e); }
+            }
+          }, 1000);
           toggle.textContent = 'Already have an account? Sign in';
         } else {
           clerk.mountSignIn(mountEl, {
