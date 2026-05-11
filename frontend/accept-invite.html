@@ -131,6 +131,10 @@
   </div>
 
   <script>
+    if (window.location.hash.startsWith('#/')) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+
     const API = window.ENV_API_URL;
     const params = new URLSearchParams(window.location.search);
     const inviteToken = params.get('token');
@@ -180,7 +184,13 @@
         return showTokenError('Sign-in service unavailable. Please try again later.');
       }
       const clerk = window.Clerk;
-      await clerk.load();
+      try {
+        // No-op router functions prevent Clerk from redirecting the browser,
+        // which would drop the invite token and cause a reload loop.
+        await clerk.load({ routerPush: () => {}, routerReplace: () => {} });
+      } catch (e) {
+        return showTokenError('Sign-in service failed to initialize. Please try again.');
+      }
       clerkInstance = clerk;
 
       if (clerk.user) {
