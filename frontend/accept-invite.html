@@ -192,9 +192,8 @@
       } else {
         // Mount Clerk sign-in/sign-up; listen for successful auth then accept
         clerk.mountSignUp(document.getElementById('clerk-mount'), {
+          routing: 'virtual',
           signInUrl: window.location.href,
-          afterSignInUrl: window.location.href,
-          afterSignUpUrl: window.location.href,
         });
         clerk.addListener(({ user }) => {
           if (user) {
