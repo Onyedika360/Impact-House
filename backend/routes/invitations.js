@@ -1,11 +1,30 @@
 const router     = require('express').Router();
 const { randomUUID } = require('crypto');
+const { verifyToken } = require('@clerk/backend');
 const db         = require('../db');
 const auth       = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 const sgMail     = require('@sendgrid/mail');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// Verifies the Clerk JWT but does NOT require a row in the users table.
+// Used only for /accept where the user doesn't exist in our DB yet.
+async function jwtOnly(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer '))
+      return res.status(401).json({ error: 'No token provided.' });
+    const payload = await verifyToken(authHeader.split(' ')[1], {
+      secretKey: process.env.CLERK_SECRET_KEY,
+      clockSkewInMs: 60000,
+    });
+    req.auth = { userId: payload.sub };
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired session.' });
+  }
+}
 
 // POST /api/invitations — admin sends an invite email
 router.post('/', auth, requireRole('admin'), async (req, res) => {
@@ -84,7 +103,7 @@ router.delete('/:id', auth, requireRole('admin'), async (req, res) => {
 });
 
 // POST /api/invitations/accept — called after Clerk sign-in, creates the user record
-router.post('/accept', auth, async (req, res) => {
+router.post('/accept', jwtOnly, async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ error: 'token is required.' });
 
