@@ -11,6 +11,7 @@ const statsRoutes     = require('./routes/stats');
 const templateRoutes  = require('./routes/templates');
 const publicRoutes    = require('./routes/public');
 const { startScheduler } = require('./scheduler');
+const db              = require('./db');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -47,11 +48,25 @@ app.use('/api/stats',     statsRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/public',    publicRoutes);
 
-app.get('/api/health', (_, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/health', async (_, res) => {
+  try {
+    await db.query('SELECT 1');
+    res.json({ status: 'ok', db: 'ok', timestamp: new Date().toISOString() });
+  } catch {
+    res.status(503).json({ status: 'ok', db: 'unreachable', timestamp: new Date().toISOString() });
+  }
+});
 app.use((_, res) => res.status(404).json({ error: 'Route not found.' }));
 app.use((err, req, res, _next) => { console.error(err.stack); res.status(500).json({ error: 'Internal server error.' }); });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`\n🏛  Impact House House Church API — port ${PORT}\n`);
   startScheduler();
+  // Eagerly open a DB connection so Neon's compute is warm before the first request
+  try {
+    await db.query('SELECT 1');
+    console.log('DB connection warm.\n');
+  } catch (err) {
+    console.warn('DB warm-up failed (will retry on first request):', err.message);
+  }
 });
