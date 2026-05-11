@@ -376,6 +376,7 @@
     <p>Sign in to the Communications Portal</p>
   </div>
   <div id="clerk-signin-mount"></div>
+  <div id="clerk-signup-mount" style="display:none;"></div>
   <div style="margin-top:18px;text-align:center;display:flex;flex-direction:column;gap:8px;">
     <a href="#" id="auth-mode-toggle"
        style="font-size:13px;color:#c9a96e;text-decoration:underline;cursor:pointer;"></a>
@@ -919,50 +920,38 @@ window.addEventListener('load', async () => {
       document.getElementById('auth-loading').style.display = 'none';
       document.getElementById('clerk-signin-overlay').classList.add('show');
 
-      const mountEl = document.getElementById('clerk-signin-mount');
+      const signInMount = document.getElementById('clerk-signin-mount');
+      const signUpMount = document.getElementById('clerk-signup-mount');
       const toggle = document.getElementById('auth-mode-toggle');
       const appearance = {
         variables: { colorPrimary: '#c9a96e', colorBackground: '#1a1917', colorText: '#f5f2ed', colorInputBackground: '#2a2927', colorInputText: '#f5f2ed' }
       };
       let currentMode = new URLSearchParams(window.location.search).get('mode') === 'signup' ? 'signup' : 'signin';
 
-      function renderAuth() {
-        try { clerk.unmountSignIn(mountEl); } catch {}
-        try { clerk.unmountSignUp(mountEl); } catch {}
-        mountEl.innerHTML = '';
-        if (currentMode === 'signup') {
-          try {
-            clerk.mountSignUp(mountEl, {
-              afterSignUpUrl: window.location.origin + '/',
-              afterSignInUrl: window.location.origin + '/',
-              appearance,
-            });
-          } catch (err) {
-            console.error('mountSignUp failed:', err);
-            mountEl.innerHTML = `<div style="color:#f5f2ed;font-size:13px;text-align:center;padding:20px;">Sign-up form failed to load. Click below to open it in a popup.</div>`;
-          }
-          // Fallback: if mountSignUp renders nothing after 1s, open the modal
-          setTimeout(() => {
-            if (currentMode === 'signup' && mountEl.children.length === 0) {
-              console.warn('mountSignUp rendered empty — falling back to openSignUp modal');
-              try { clerk.openSignUp({ afterSignUpUrl: window.location.origin + '/' }); } catch (e) { console.error(e); }
-            }
-          }, 1000);
-          toggle.textContent = 'Already have an account? Sign in';
-        } else {
-          clerk.mountSignIn(mountEl, {
-            afterSignInUrl: window.location.origin + '/',
-            afterSignUpUrl: window.location.origin + '/',
-            appearance,
-          });
-          toggle.textContent = "Don't have an account? Sign up";
-        }
+      // Mount both components once into their own elements; toggle visibility.
+      clerk.mountSignIn(signInMount, {
+        afterSignInUrl: window.location.origin + '/',
+        afterSignUpUrl: window.location.origin + '/',
+        appearance,
+      });
+      clerk.mountSignUp(signUpMount, {
+        afterSignUpUrl: window.location.origin + '/',
+        afterSignInUrl: window.location.origin + '/',
+        appearance,
+      });
+
+      function showMode(mode) {
+        signInMount.style.display = mode === 'signin' ? 'block' : 'none';
+        signUpMount.style.display = mode === 'signup' ? 'block' : 'none';
+        toggle.textContent = mode === 'signup'
+          ? 'Already have an account? Sign in'
+          : "Don't have an account? Sign up";
       }
-      renderAuth();
+      showMode(currentMode);
       toggle.addEventListener('click', (e) => {
         e.preventDefault();
         currentMode = currentMode === 'signin' ? 'signup' : 'signin';
-        renderAuth();
+        showMode(currentMode);
       });
       // Fallback: if Clerk's native afterSignInUrl redirect doesn't fire,
       // detect a successful sign-in via listener OR polling and reload.
