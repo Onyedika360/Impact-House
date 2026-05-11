@@ -153,12 +153,18 @@
         return showError('error-card', 'Sign-in service is unavailable. Please try again later.');
       }
 
-      // Start a Clerk signUp with the ticket — this validates it and returns email
+      // Use existing signUp if Clerk already processed the ticket during load(),
+      // otherwise create one manually. Newer clerk-js versions may auto-process __clerk_ticket.
       try {
-        signUpObj = await window.Clerk.client.signUp.create({ strategy: 'ticket', ticket });
+        const existing = window.Clerk.client?.signUp;
+        if (existing?.status && existing.status !== 'abandoned' && existing.emailAddress) {
+          signUpObj = existing;
+        } else {
+          signUpObj = await window.Clerk.client.signUp.create({ strategy: 'ticket', ticket });
+        }
       } catch (e) {
         const msg = e?.errors?.[0]?.longMessage || e?.errors?.[0]?.message || e.message;
-        return showError('error-card', msg);
+        return showError('error-card', msg || 'This invitation link is invalid or has already been used.');
       }
 
       const email = signUpObj.emailAddress;
