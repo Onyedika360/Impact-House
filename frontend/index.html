@@ -909,11 +909,16 @@ window.addEventListener('load', async () => {
       await bootApp(clerk);
     } else {
       // If there's a half-completed sign-in attempt stuck mid-flow (e.g. waiting on 2FA),
-      // clear it so the user starts fresh instead of being trapped on a loading screen.
+      // sign out + hard-reload so Clerk's in-memory client state is fully wiped, not just cookies.
+      // sessionStorage flag prevents an infinite reset loop if signOut fails.
       const stuckStatus = clerk.client?.signIn?.status;
-      if (stuckStatus && stuckStatus !== 'complete') {
+      if (stuckStatus && stuckStatus !== 'complete' && !sessionStorage.getItem('_clerkReset')) {
+        sessionStorage.setItem('_clerkReset', '1');
         try { await clerk.signOut(); } catch {}
+        window.location.replace(window.location.origin + '/');
+        return;
       }
+      sessionStorage.removeItem('_clerkReset');
 
       document.getElementById('auth-loading').style.display = 'none';
       document.getElementById('clerk-signin-overlay').classList.add('show');
