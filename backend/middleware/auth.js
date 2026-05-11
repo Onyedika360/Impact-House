@@ -1,5 +1,7 @@
-const { verifyToken } = require('@clerk/backend');
+const { verifyToken, createClerkClient } = require('@clerk/backend');
 const db = require('../db');
+
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 module.exports = async (req, res, next) => {
   try {
@@ -13,20 +15,36 @@ module.exports = async (req, res, next) => {
       clockSkewInMs: 60000,
     });
 
-    // Look up the user in our DB — this is the single source of truth for access
-    const { rows } = await db.query(
+    let { rows } = await db.query(
       `UPDATE users SET last_seen_at = NOW() WHERE clerk_id = $1 AND status = 'active' RETURNING *`,
       [payload.sub]
     );
 
-    if (!rows.length)
-      return res.status(403).json({
-        error: 'Access denied.',
-        hint: 'Your account is not set up yet. Ask an admin to invite you.',
-      });
+    if (!rows.length) {
+      // Auto-provision: first authenticated Clerk user becomes admin, rest become editor.
+      // Clerk itself is the access guard — only invited/approved users reach here.
+      const clerkUser = await clerkClient.users.getUser(payload.sub);
+      const email = clerkUser.emailAddresses[0]?.emailAddress || '';
+      const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || email;
 
-    req.user = rows[0]; // { id, clerk_id, email, name, role, status, ... }
-    req.auth = { userId: payload.sub, name: rows[0].name }; // keep backward compat
+      const { rows: countRows } = await db.query('SELECT COUNT(*) FROM users');
+      const role = parseInt(countRows[0].count, 10) === 0 ? 'admin' : 'editor';
+
+      const insert = await db.query(
+        `INSERT INTO users (clerk_id, email, name, role)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (clerk_id) DO UPDATE SET last_seen_at = NOW()
+         RETURNING *`,
+        [payload.sub, email, name, role]
+      );
+      rows = insert.rows;
+    }
+
+    if (!rows.length)
+      return res.status(403).json({ error: 'Access denied.' });
+
+    req.user = rows[0];
+    req.auth = { userId: payload.sub, name: rows[0].name };
     next();
   } catch (err) {
     console.error('Auth error:', err.message);

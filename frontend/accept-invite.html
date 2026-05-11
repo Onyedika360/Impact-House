@@ -191,8 +191,8 @@
         if (clerkName) document.getElementById('invite-name').value = clerkName;
       } else {
         // Mount Clerk sign-in/sign-up; listen for successful auth then accept
-        clerk.mountSignIn(document.getElementById('clerk-mount'), {
-          signUpUrl: window.location.href,
+        clerk.mountSignUp(document.getElementById('clerk-mount'), {
+          signInUrl: window.location.href,
           afterSignInUrl: window.location.href,
           afterSignUpUrl: window.location.href,
         });
