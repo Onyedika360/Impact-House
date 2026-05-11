@@ -100,6 +100,31 @@ router.delete('/groups/:id', requireRole('admin'), async (req, res) => {
   res.json({ success: true });
 });
 
+// GET /api/members/duplicates — groups that share the same name (admin only)
+router.get('/duplicates', requireRole('admin'), async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        LOWER(first_name) AS fn,
+        LOWER(last_name)  AS ln,
+        json_agg(
+          json_build_object('id', id, 'first_name', first_name, 'last_name', last_name,
+            'email', email, 'phone', phone, 'status', status)
+          ORDER BY id
+        ) AS members,
+        COUNT(*) AS cnt
+      FROM members
+      GROUP BY fn, ln
+      HAVING COUNT(*) > 1
+      ORDER BY cnt DESC, fn, ln
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch duplicates.' });
+  }
+});
+
 // GET /api/members/:id
 router.get('/:id', async (req, res) => {
   const { rows } = await db.query(
@@ -227,6 +252,29 @@ router.post('/bulk', async (req, res) => {
         continue;
       }
       try {
+        const normalizedPhone = normalizePhone(r.phone);
+        const normalizedEmail = r.email?.trim() || null;
+
+        // Name-based soft duplicate guard: when a row has no contact info there is
+        // no unique constraint to prevent a collision, so check by name instead.
+        if (!normalizedEmail && !normalizedPhone) {
+          const { rows: nameCheck } = await client.query(
+            `SELECT id FROM members
+             WHERE LOWER(first_name) = LOWER($1) AND LOWER(last_name) = LOWER($2)
+             LIMIT 1`,
+            [r.first_name.trim(), r.last_name.trim()]
+          );
+          if (nameCheck.length) {
+            results.push({
+              row: rowNum,
+              status: 'name_duplicate',
+              name: `${r.first_name} ${r.last_name}`,
+              message: 'A member with this name already exists and there is no contact info to distinguish them.',
+            });
+            continue;
+          }
+        }
+
         const { rows: ins } = await client.query(
           `INSERT INTO members
              (first_name, last_name, email, phone, gender, notify_sms, notify_email, status, unsubscribe_token)
@@ -234,8 +282,8 @@ router.post('/bulk', async (req, res) => {
            RETURNING id`,
           [
             r.first_name.trim(), r.last_name.trim(),
-            r.email?.trim() || null,
-            normalizePhone(r.phone),
+            normalizedEmail,
+            normalizedPhone,
             r.gender?.trim() || null,
             r.notify_sms !== 'false' && r.notify_sms !== false,
             r.notify_email !== 'false' && r.notify_email !== false,

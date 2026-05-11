@@ -522,6 +522,7 @@
             <input class="search-input" id="member-search" placeholder="Search by name, phone or email..." oninput="searchMembers(this.value)"/>
           </div>
           <button class="btn btn-ghost" onclick="exportMembers()">Export CSV</button>
+          <button class="btn btn-ghost" id="btn-duplicates" onclick="openDuplicates()" style="display:none;">Duplicates <span id="dup-badge" style="display:none;background:var(--danger);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-left:4px;"></span></button>
           <button class="btn btn-ghost" onclick="openBulkUpload()">Bulk Upload</button>
           <button class="btn btn-dark" onclick="openModal('add')">+ Add Member</button>
         </div>
@@ -836,6 +837,23 @@
   </div>
 </div>
 
+<!-- DUPLICATES MODAL -->
+<div class="modal-overlay" id="dup-modal">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <span class="modal-title">Duplicate Members</span>
+      <button class="modal-close" onclick="closeDuplicates()">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Members sharing the same name. Review each group and delete the unwanted record.</p>
+      <div id="dup-list" style="max-height:440px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeDuplicates()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- BULK UPLOAD MODAL -->
 <div class="modal-overlay" id="bulk-modal">
   <div class="modal" style="max-width:600px;">
@@ -855,6 +873,9 @@
       <div id="bulk-preview" style="display:none;">
         <div style="font-size:12px;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;" id="bulk-preview-count"></div>
         <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;background:var(--warm-gray);padding:10px 12px;font-size:12px;font-family:monospace;white-space:pre;color:var(--mid);" id="bulk-preview-text"></div>
+        <div id="bulk-no-contact-warn" style="display:none;margin-top:8px;padding:8px 12px;background:#fff8e1;border:1px solid #e6c84a;border-radius:8px;font-size:12px;color:#7a5f00;">
+          ⚠ <span id="bulk-no-contact-msg"></span> These rows can't be deduplicated if a member with the same name exists.
+        </div>
       </div>
       <div id="bulk-results" style="display:none;margin-top:12px;">
         <div style="font-size:12px;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Results</div>
@@ -1041,6 +1062,7 @@ async function bootApp(clerk) {
 
   document.getElementById('app').classList.add('visible');
   await Promise.all([loadGroups(), loadDashboard()]);
+  if (appUserRole === 'admin') checkDuplicateBadge();
 }
 
 async function doLogout() {
@@ -1400,11 +1422,24 @@ async function deleteMember(id, name) {
 // ── BULK UPLOAD ───────────────────────────────────────────
 let bulkRows = [];
 
+// Mirror of the backend normalizePhone — kept in sync for client-side preview.
+function normalizePhonePreview(input) {
+  if (!input) return null;
+  const clean = String(input).replace(/\.0+$/, '');
+  const digits = clean.replace(/\D/g, '');
+  if (!digits) return null;
+  if (digits.length === 10) return '+1' + digits;
+  if (digits.length === 11 && digits[0] === '1') return '+' + digits;
+  if (digits.length > 11) return '+' + digits;
+  return null;
+}
+
 function openBulkUpload() {
   bulkRows = [];
   document.getElementById('bulk-file').value = '';
   document.getElementById('bulk-preview').style.display = 'none';
   document.getElementById('bulk-results').style.display = 'none';
+  document.getElementById('bulk-no-contact-warn').style.display = 'none';
   document.getElementById('bulk-submit-btn').disabled = true;
   document.getElementById('bulk-modal').classList.add('open');
 }
@@ -1426,12 +1461,31 @@ function previewBulkCsv(input) {
       const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g,''));
       return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']));
     }).filter(r => r.first_name || r.last_name);
-    const previewLines = bulkRows.slice(0, 5).map(r => `${r.first_name} ${r.last_name} | ${r.email||'—'} | ${r.phone||'—'}`).join('\n');
+
+    // Phone preview: show normalized value, warn if non-empty but invalid
+    const previewLines = bulkRows.slice(0, 5).map(r => {
+      const raw = r.phone || '';
+      const norm = raw ? normalizePhonePreview(raw) : null;
+      const phoneDisplay = !raw ? '—' : norm ? norm : '⚠ phone will be skipped';
+      return `${r.first_name} ${r.last_name} | ${r.email || '—'} | ${phoneDisplay}`;
+    }).join('\n');
+
+    // Count rows with no contact info across ALL rows
+    const noContact = bulkRows.filter(r => !r.email?.trim() && !normalizePhonePreview(r.phone)).length;
+
     document.getElementById('bulk-preview-count').textContent = `${bulkRows.length} member${bulkRows.length===1?'':'s'} ready to import`;
     document.getElementById('bulk-preview-text').textContent = previewLines + (bulkRows.length > 5 ? `\n… and ${bulkRows.length - 5} more` : '');
     document.getElementById('bulk-preview').style.display = 'block';
     document.getElementById('bulk-results').style.display = 'none';
     document.getElementById('bulk-submit-btn').disabled = false;
+
+    const warnEl = document.getElementById('bulk-no-contact-warn');
+    if (noContact > 0) {
+      document.getElementById('bulk-no-contact-msg').textContent = `${noContact} row${noContact===1?'':'s'} have no email or phone.`;
+      warnEl.style.display = 'block';
+    } else {
+      warnEl.style.display = 'none';
+    }
   };
   reader.readAsText(file);
 }
@@ -1443,18 +1497,87 @@ async function submitBulkUpload() {
   try {
     const data = await post('/members/bulk', { rows: bulkRows });
     const created   = data.results.filter(r => r.status === 'created').length;
-    const duplicate = data.results.filter(r => r.status === 'duplicate').length;
+    const duplicate = data.results.filter(r => r.status === 'duplicate' || r.status === 'name_duplicate').length;
     const errors    = data.results.filter(r => r.status === 'error').length;
     document.getElementById('bulk-results-body').innerHTML = data.results.map(r => {
-      const color = r.status === 'created' ? 'var(--gold-dark)' : r.status === 'duplicate' ? 'var(--muted)' : 'var(--danger)';
-      const icon  = r.status === 'created' ? '✓' : r.status === 'duplicate' ? '↩' : '✗';
+      const isDup = r.status === 'duplicate' || r.status === 'name_duplicate';
+      const color = r.status === 'created' ? 'var(--gold-dark)' : isDup ? 'var(--muted)' : 'var(--danger)';
+      const icon  = r.status === 'created' ? '✓' : isDup ? '↩' : '✗';
       return `<div style="color:${color};">${icon} Row ${r.row}: ${r.name || ''} — ${r.status}${r.message ? ': ' + r.message : ''}</div>`;
     }).join('');
     document.getElementById('bulk-results').style.display = 'block';
     toast(`Imported ${created} members. ${duplicate} duplicate${duplicate===1?'':'s'}. ${errors} error${errors===1?'':'s'}.`);
     loadMembers(1); loadDashboard();
+    if (window._appUserRole === 'admin') checkDuplicateBadge();
   } catch(e) { toast(e.message || 'Bulk upload failed.', 'error'); }
   finally { btn.disabled = false; btn.textContent = 'Upload'; }
+}
+
+// ── DUPLICATES ─────────────────────────────────────────────
+function openDuplicates() {
+  document.getElementById('dup-modal').classList.add('open');
+  loadDuplicateList();
+}
+function closeDuplicates() { document.getElementById('dup-modal').classList.remove('open'); }
+document.getElementById('dup-modal').addEventListener('click', e => { if (e.target.id === 'dup-modal') closeDuplicates(); });
+
+async function checkDuplicateBadge() {
+  if (window._appUserRole !== 'admin') return;
+  try {
+    const groups = await get('/members/duplicates');
+    const btn = document.getElementById('btn-duplicates');
+    const badge = document.getElementById('dup-badge');
+    btn.style.display = groups.length ? 'inline-flex' : 'none';
+    if (groups.length) { badge.textContent = groups.length; badge.style.display = 'inline'; }
+    else { badge.style.display = 'none'; }
+  } catch {}
+}
+
+async function loadDuplicateList() {
+  const list = document.getElementById('dup-list');
+  list.innerHTML = '<div style="font-size:13px;color:var(--muted);">Loading…</div>';
+  try {
+    const groups = await get('/members/duplicates');
+    if (!groups.length) {
+      list.innerHTML = '<div style="font-size:13px;color:var(--muted);">No duplicate members found.</div>';
+      document.getElementById('btn-duplicates').style.display = 'none';
+      document.getElementById('dup-badge').style.display = 'none';
+      return;
+    }
+    list.innerHTML = groups.map(g => `
+      <div style="border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">
+        <div style="background:var(--warm-gray);padding:8px 12px;font-size:12px;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.04em;">
+          ${g.members[0].first_name} ${g.members[0].last_name} — ${g.cnt} records
+        </div>
+        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">
+          ${g.members.map(m => `
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:500;">${m.first_name} ${m.last_name}</div>
+                <div style="font-size:12px;color:var(--muted);">${m.email || '—'} &middot; ${m.phone || '—'} &middot; ${m.status}</div>
+              </div>
+              <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--danger);border-color:var(--danger);"
+                onclick="deleteDuplicateMember(${m.id}, '${(m.first_name+' '+m.last_name).replace(/'/g,"\\'")}')">Delete</button>
+            </div>
+          `).join('<hr style="border:none;border-top:1px solid var(--border-light);margin:0;">')}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--danger);">Failed to load duplicates.</div>';
+  }
+}
+
+async function deleteDuplicateMember(id, name) {
+  if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+  try {
+    await del('/members/' + id);
+    toast(`${name} deleted.`);
+    loadDuplicateList();
+    loadMembers(memberPage);
+    loadDashboard();
+    checkDuplicateBadge();
+  } catch(e) { toast(e.message || 'Failed to delete.', 'error'); }
 }
 
 // ── SEND ─────────────────────────────────────────────────
