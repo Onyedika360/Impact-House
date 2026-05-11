@@ -9,8 +9,8 @@
   ],
   "routes": [
     { "src": "/logo.png",       "dest": "/frontend/logo.png" },
-    { "src": "/signup",         "dest": "/signup.html" },
-    { "src": "/accept-invite",  "dest": "/accept-invite.html" },
+    { "src": "/signup",         "dest": "/frontend/signup.html" },
+    { "src": "/accept-invite",  "dest": "/frontend/accept-invite.html" },
     { "src": "/(.*)",           "dest": "/frontend/index.html" }
   ]
 }

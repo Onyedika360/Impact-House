@@ -6,12 +6,13 @@
   <title>Accept Invitation — Impact House</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <script>
+    window.ENV_API_URL = 'https://impact-house.onrender.com/api';
     window.CLERK_KEY = 'pk_live_Y2xlcmsuYXBwLnRrcGltcGFjdGhvdXNlLm9yZyQ';
   </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --black: #131210; --charcoal: #1e1d1b; --muted: #7a7874;
+      --black: #131210; --charcoal: #1e1d1b; --mid: #4a4844; --muted: #7a7874;
       --border: #e2ddd6; --surface: #f9f7f4; --white: #fff;
       --gold: #c9a96e; --gold-light: #f0e6d0; --gold-dark: #9e7c46;
       --font-display: 'Cormorant Garamond', Georgia, serif;
@@ -26,16 +27,50 @@
     header { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 28px; }
     header img { height: 56px; }
     header h1 { font-family: var(--font-display); font-size: 26px; font-weight: 600; color: var(--black); }
-    #clerk-mount { width: 100%; max-width: 420px; }
-    #loading { font-size: 14px; color: var(--muted); margin-top: 12px; }
-    .error-card {
+    .card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 14px; padding: 32px 28px; width: 100%; max-width: 420px;
+    }
+    .invite-badge {
+      display: inline-block; padding: 4px 12px;
+      background: var(--gold-light); color: var(--gold-dark);
+      border-radius: 20px; font-size: 12px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px;
+    }
+    .card h2 { font-family: var(--font-display); font-size: 22px; margin-bottom: 8px; }
+    .card p.lead { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+    .card p.lead strong { color: var(--charcoal); }
+    .row { display: flex; gap: 10px; margin-bottom: 14px; }
+    .field { flex: 1; }
+    label { display: block; font-size: 12px; font-weight: 500; color: var(--mid); margin-bottom: 5px; letter-spacing: 0.03em; text-transform: uppercase; }
+    input {
+      width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+      border-radius: var(--radius); font: 14px/1.4 var(--font-body);
+      color: var(--charcoal); background: var(--white); outline: none; transition: border-color .15s;
+    }
+    input:focus { border-color: var(--gold); }
+    input:read-only { background: var(--surface); color: var(--muted); }
+    .btn {
+      width: 100%; padding: 11px; margin-top: 4px;
+      background: var(--gold); color: var(--white); border: none;
+      border-radius: var(--radius); font: 500 15px var(--font-body);
+      cursor: pointer; transition: opacity .15s;
+    }
+    .btn:hover { opacity: .88; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .error-msg { font-size: 13px; color: var(--danger); margin-top: 10px; display: none; }
+    .error-msg.visible { display: block; }
+    .state-card {
       display: none; background: var(--white); border: 1px solid var(--border);
       border-radius: 14px; padding: 40px 28px; width: 100%; max-width: 420px; text-align: center;
     }
-    .error-card.visible { display: block; }
-    .error-card .icon { font-size: 48px; margin-bottom: 16px; }
-    .error-card h2 { font-family: var(--font-display); font-size: 22px; margin-bottom: 10px; }
-    .error-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .state-card.visible { display: block; }
+    .state-icon { font-size: 48px; margin-bottom: 16px; }
+    .state-card h2 { font-family: var(--font-display); font-size: 22px; margin-bottom: 10px; }
+    .state-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .state-card a { color: var(--gold-dark); text-decoration: none; font-weight: 500; }
+    .state-card a:hover { text-decoration: underline; }
+    #loading { font-size: 14px; color: var(--muted); margin-top: 12px; }
   </style>
 </head>
 <body>
@@ -44,13 +79,32 @@
     <h1>Impact House</h1>
   </header>
 
-  <p id="loading">Loading…</p>
-  <div id="clerk-mount"></div>
+  <p id="loading">Validating your invitation…</p>
 
-  <div class="error-card" id="error-card">
-    <div class="icon">⚠️</div>
+  <div class="card" id="accept-card" style="display:none;">
+    <div class="invite-badge" id="role-badge">Team Invitation</div>
+    <h2 id="welcome-heading">Welcome!</h2>
+    <p class="lead">You've been invited to join Impact House as <strong id="role-label"></strong>. Set a password below to finish setting up your account.</p>
+    <div class="row">
+      <div class="field"><label>First Name</label><input id="acc-fn" type="text" readonly></div>
+      <div class="field"><label>Last Name</label><input id="acc-ln" type="text" readonly></div>
+    </div>
+    <div style="margin-bottom:14px;"><label>Email</label><input id="acc-email" type="email" readonly></div>
+    <div style="margin-bottom:14px;"><label>Create a Password</label><input id="acc-password" type="password" placeholder="At least 8 characters" autocomplete="new-password"></div>
+    <button class="btn" id="accept-btn" onclick="completeAccept()">Accept &amp; Create Account</button>
+    <p class="error-msg" id="error-msg"></p>
+  </div>
+
+  <div class="state-card" id="success-card">
+    <div class="state-icon">🎉</div>
+    <h2>Welcome to the team!</h2>
+    <p>Your account is ready. Redirecting you to the app…</p>
+  </div>
+
+  <div class="state-card" id="error-card">
+    <div class="state-icon">⚠️</div>
     <h2>Invalid Invitation</h2>
-    <p>This invitation link is invalid or has expired. Ask an admin to send a new one.</p>
+    <p id="error-card-msg">This invitation link is invalid or has expired. Ask an admin to send a new one.</p>
   </div>
 
   <script>
@@ -58,37 +112,117 @@
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
 
-    const hasTicket = new URLSearchParams(window.location.search).has('__clerk_ticket');
+    const API = window.ENV_API_URL;
+    const params = new URLSearchParams(window.location.search);
+    const ticket = params.get('__clerk_ticket');
 
-    if (!hasTicket) {
+    function showError(card, msg) {
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('error-card').classList.add('visible');
-    } else {
-      const src = 'https://clerk.app.tkpimpacthouse.org/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
-
-      const s = document.createElement('script');
-      s.src = src;
-      s.setAttribute('data-clerk-publishable-key', window.CLERK_KEY);
-      s.crossOrigin = 'anonymous';
-      s.onload = async () => {
-        try {
-          await window.Clerk.load();
-          document.getElementById('loading').style.display = 'none';
-          window.Clerk.mountSignUp(document.getElementById('clerk-mount'), {
-            afterSignUpUrl: window.location.origin + '/',
-            afterSignInUrl: window.location.origin + '/',
-          });
-        } catch (e) {
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('error-card').classList.add('visible');
-        }
-      };
-      s.onerror = () => {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error-card').classList.add('visible');
-      };
-      document.head.appendChild(s);
+      document.getElementById('accept-card').style.display = 'none';
+      if (msg) document.getElementById('error-card-msg').textContent = msg;
+      document.getElementById(card).classList.add('visible');
     }
+
+    function showInlineError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg; el.classList.add('visible');
+    }
+    function clearInlineError() {
+      document.getElementById('error-msg').classList.remove('visible');
+    }
+
+    let signUpObj = null;
+    let invitationInfo = null;
+
+    async function init() {
+      if (!ticket) return showError('error-card', 'No invitation ticket found in this link.');
+
+      // Load Clerk
+      try {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://clerk.app.tkpimpacthouse.org/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
+          s.setAttribute('data-clerk-publishable-key', window.CLERK_KEY);
+          s.crossOrigin = 'anonymous';
+          s.onload = resolve;
+          s.onerror = () => reject(new Error('Clerk failed to load.'));
+          document.head.appendChild(s);
+        });
+        await window.Clerk.load({ routerPush: () => {}, routerReplace: () => {} });
+      } catch (e) {
+        return showError('error-card', 'Sign-in service is unavailable. Please try again later.');
+      }
+
+      // Start a Clerk signUp with the ticket — this validates it and returns email
+      try {
+        signUpObj = await window.Clerk.client.signUp.create({ strategy: 'ticket', ticket });
+      } catch (e) {
+        const msg = e?.errors?.[0]?.longMessage || e?.errors?.[0]?.message || e.message;
+        return showError('error-card', msg);
+      }
+
+      const email = signUpObj.emailAddress;
+      if (!email) return showError('error-card', 'Could not read invitation email.');
+
+      // Pull name + role from our backend (validated implicitly by Clerk ticket above)
+      try {
+        const r = await fetch(`${API}/public/invitation-info?email=${encodeURIComponent(email)}`);
+        const data = await r.json();
+        if (!r.ok) return showError('error-card', data.error);
+        invitationInfo = data;
+      } catch {
+        return showError('error-card', 'Could not load invitation details.');
+      }
+
+      // Populate UI
+      document.getElementById('acc-fn').value = invitationInfo.first_name || '';
+      document.getElementById('acc-ln').value = invitationInfo.last_name || '';
+      document.getElementById('acc-email').value = email;
+      document.getElementById('role-label').textContent = invitationInfo.role;
+      document.getElementById('role-badge').textContent =
+        invitationInfo.role.charAt(0).toUpperCase() + invitationInfo.role.slice(1) + ' Invitation';
+      document.getElementById('welcome-heading').textContent = `Welcome, ${invitationInfo.first_name || 'friend'}!`;
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('accept-card').style.display = 'block';
+    }
+
+    async function completeAccept() {
+      clearInlineError();
+      const password = document.getElementById('acc-password').value;
+      if (!password || password.length < 8) {
+        showInlineError('Password must be at least 8 characters.');
+        return;
+      }
+
+      const btn = document.getElementById('accept-btn');
+      btn.disabled = true; btn.textContent = 'Creating account…';
+
+      try {
+        const updated = await signUpObj.update({
+          password,
+          firstName: invitationInfo.first_name,
+          lastName: invitationInfo.last_name,
+        });
+
+        if (updated.status !== 'complete' || !updated.createdSessionId) {
+          showInlineError(`Account setup needs more info: ${updated.status}`);
+          btn.disabled = false; btn.textContent = 'Accept & Create Account';
+          return;
+        }
+
+        await window.Clerk.setActive({ session: updated.createdSessionId });
+
+        document.getElementById('accept-card').style.display = 'none';
+        document.getElementById('success-card').classList.add('visible');
+        setTimeout(() => { window.location.replace(window.location.origin + '/'); }, 1500);
+      } catch (e) {
+        const msg = e?.errors?.[0]?.longMessage || e?.errors?.[0]?.message || e.message;
+        showInlineError(msg);
+        btn.disabled = false; btn.textContent = 'Accept & Create Account';
+      }
+    }
+
+    window.addEventListener('load', init);
   </script>
 </body>
 </html>

@@ -10,6 +10,35 @@ const signupLimiter = rateLimit({
   message: { error: 'Too many sign-up attempts. Please try again later.' },
 });
 
+const inviteInfoLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 30,
+  standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many lookups. Please try again later.' },
+});
+
+// GET /api/public/invitation-info?email=… — returns name + role for a pending invite.
+// Caller must have already validated a Clerk ticket which gave them the email;
+// rate-limited to deter enumeration.
+router.get('/invitation-info', inviteInfoLimiter, async (req, res) => {
+  const email = String(req.query.email || '').toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: 'email is required.' });
+  try {
+    const { rows } = await db.query(
+      `SELECT first_name, last_name, role, email
+       FROM invitations
+       WHERE email = $1 AND revoked_at IS NULL
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [email]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'No pending invitation for this email.' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('invitation-info error:', err.message);
+    res.status(500).json({ error: 'Lookup failed.' });
+  }
+});
+
 // POST /api/public/signup
 router.post('/signup', signupLimiter, async (req, res) => {
   const {
